@@ -1,1 +1,184 @@
+# Subscription Lifecycle Playbook
 
+**Phase:** 2 — Product Configuration  
+**Product:** DOKU FlexiBill  
+**Audience:** Product, Engineering, Implementation, Sales, Partnership, Operations  
+**Markets:** Indonesia (ID) and Malaysia (MY)  
+**Status:** Internal working guide — validate exact behavior against current product documentation and country configuration before merchant commitment.
+
+---
+
+## 1. Overview
+
+A subscription is a continuing commercial relationship between a merchant and a customer, governed by a selected product or service, pricing arrangement, billing frequency, payment method, and lifecycle rules.
+
+The subscription lifecycle describes what happens from the moment a customer subscribes until the subscription is renewed, changed, suspended, cancelled, or expires.
+
+For FlexiBill, the lifecycle must be understood across three connected dimensions:
+
+1. **Commercial lifecycle:** What service or plan does the customer have?
+2. **Billing lifecycle:** When and how much should the customer be billed?
+3. **Payment lifecycle:** Was the amount successfully collected?
+
+These dimensions are related but not interchangeable. A successful payment does not necessarily mean the subscription configuration is correct, and a failed payment does not automatically mean the customer has cancelled.
+
+## 2. Lifecycle overview
+
+The following is a conceptual lifecycle. Exact state names, transition rules, and automation behavior must be validated against the current FlexiBill implementation.
+
+```text
+DISCOVERY
+   |
+   v
+PLAN SELECTION
+   |
+   v
+SUBSCRIPTION CREATION
+   |
+   v
+CUSTOMER / MEMBER ASSOCIATION
+   |
+   v
+PAYMENT METHOD / AUTHORIZATION
+   |
+   v
+ACTIVATION
+   |
+   v
+ACTIVE SUBSCRIPTION
+   |
+   +------------------------------+
+   |                              |
+   v                              v
+RECURRING BILLING             PLAN CHANGE
+   |                              |
+   v                              v
+PAYMENT ATTEMPT              CHANGE EFFECTIVE
+   |                              |
+   +---------------+--------------+
+                   |
+                   v
+             PAYMENT RESULT
+              /         \
+             /           \
+        SUCCESS          FAILURE
+           |                |
+           v                v
+     NEXT BILLING       RETRY / RECOVERY
+           |                |
+           |          +-----+------+
+           |          |            |
+           |       RECOVERED    UNRECOVERED
+           |          |            |
+           +----------+            v
+                              OVERDUE /
+                              SUSPENDED /
+                              EXPIRED
+                                   |
+                                   v
+                              CANCELLATION
+```
+
+The diagram represents business logic, not a confirmed state machine or a promise that every transition is automated.
+
+## 3. Lifecycle stages
+
+| Stage | Business meaning | Key implementation question |
+|---|---|---|
+| Discovery | Customer learns about the offer | Which acquisition channel is used? |
+| Plan selection | Customer selects a product and price | Which Collection, Plan, and Pricing configuration applies? |
+| Subscription creation | Subscription relationship is established | Which system creates and owns the subscription? |
+| Customer association | Subscription is linked to a customer/member | How is identity mapped? |
+| Payment setup | Payment method and authorization are established | Is authorization required before activation? |
+| Activation | Service becomes eligible for delivery | What event confirms activation? |
+| Recurring billing | A new billing cycle becomes due | What determines the next billing date? |
+| Payment collection | Payment is attempted | Which payment method and collection flow apply? |
+| Recovery | Failed collection is addressed | What retries and customer actions are supported? |
+| Plan change | Commercial arrangement changes | When does the change become effective? |
+| Suspension | Service is temporarily restricted | Is suspension automated or merchant-managed? |
+| Cancellation | Subscription is terminated | Does cancellation stop future billing immediately? |
+| Expiration | Subscription reaches its configured end | What happens to the customer and billing record? |
+
+## 4. Subscription creation
+
+A subscription typically requires a defined commercial and billing configuration.
+
+### Information to establish
+
+- Customer/member identity.
+- Merchant and Collection relationship.
+- Selected Plan and Pricing configuration.
+- Billing frequency.
+- Subscription start date.
+- First billing date.
+- Duration or end condition.
+- Payment method.
+- Customer authorization, where required.
+- Applicable tax, coupon, or discount.
+- Customer communication requirements.
+
+### Configuration principle
+
+Do not create a subscription until the merchant has agreed on:
+- What is being sold.
+- How much is charged.
+- How frequently the customer is billed.
+- When the first charge occurs.
+- What happens when payment fails.
+- How the customer can stop or change the service.
+
+Refer to:
+- [Collection Management](01-collection-management.md)
+- [Plan and Pricing Configuration](02-plan-and-pricing-configuration.md)
+- [Member Center](04-member-center.md)
+
+## 5. Activation and first payment
+
+Activation is a critical business decision.
+
+Different merchants may require different activation conditions:
+
+| Activation model | Business rule | Validation required |
+|---|---|---|
+| After successful first payment | Service activates when initial collection succeeds | Confirm event and status handling |
+| After subscription creation | Service activates when subscription is created | Confirm whether unpaid subscriptions are possible |
+| After external approval | Merchant approves before service starts | Confirm integration and status ownership |
+| Trial activation | Service begins before the first paid billing event | Confirm trial and first-charge behavior |
+
+Do not assume subscription creation, payment authorization, first payment success, and service activation are the same event.
+
+For insurance, lending, education, and other regulated or operationally sensitive use cases, the merchant must define the authoritative activation event.
+
+## 6. Recurring billing and renewal
+
+Recurring billing creates a new billing obligation according to the configured schedule.
+
+Validate:
+
+- Billing frequency.
+- Billing anchor or cycle date.
+- First billing date.
+- Subsequent billing dates.
+- Billing amount.
+- Duration.
+- Number of charges.
+- End date or termination condition.
+- Timezone and cut-off.
+- What happens when the scheduled date is invalid.
+- Whether billing continues after a payment failure.
+
+### Example: monthly fitness membership
+
+Illustrative setup:
+
+| Parameter | Example |
+|---|---|
+| Service | Monthly gym membership |
+| Price | Rp500,000 |
+| Frequency | Monthly |
+| Start date | 15 January |
+| First billing | Subject to configured first-charge rule |
+| Payment method | Authorized auto-debit |
+| Duration | Ongoing, subject to configured end condition |
+
+This example is illustrative. It does not establish the exact first-charge
