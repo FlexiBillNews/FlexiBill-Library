@@ -1,1 +1,713 @@
+# Corporate & B2B Billing — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-006  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Finance, Operations  
+**Status:** Reference solution — validate current FlexiBill capabilities, account-billing configuration, payment-channel eligibility, and country requirements before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+A corporate or B2B merchant provides products or services to business customers and needs to collect recurring or periodic payments.
+
+Typical merchant segments include:
+
+- Enterprise service providers.
+- IT and SaaS companies.
+- Telecommunications and connectivity providers.
+- Logistics and distribution companies.
+- Commercial property and facility operators.
+- Business associations.
+- Professional service providers.
+- Corporate suppliers.
+- Wholesale and B2B platforms.
+
+Unlike a simple consumer subscription, a corporate relationship can involve multiple services, contracts, billing obligations, departments, and payment responsibilities.
+
+### Merchant challenges
+
+| Problem | Business impact |
+|---|---|
+| Multiple invoices per corporate customer | Complex account reconciliation |
+| Different service billing cycles | Manual billing operations |
+| Contract-specific prices | Difficult configuration |
+| Multiple departments or branches | Fragmented payment visibility |
+| Manual payment follow-up | High operational cost |
+| Unstructured payment references | Unmatched transactions |
+| Late payment | Working-capital pressure |
+| Contract changes | Billing adjustment complexity |
+
+### Proposed solution
+
+Use FlexiBill as a payment-connected billing orchestration layer to support agreed recurring and periodic billing workflows.
+
+The corporate merchant remains responsible for:
+
+- Customer and corporate account master data.
+- Contracts and commercial terms.
+- Service delivery and usage calculation.
+- Invoice approval and accounting.
+- Tax treatment.
+- Credit limits and payment terms.
+- Account hierarchy and organizational structure.
+
+FlexiBill supports billing configuration and payment collection within the validated product and integration scope.
+
+**Core principle:** Separate the corporate customer account, the commercial contract, the billing obligation, and the payment transaction.
+
+These are related objects, but they are not interchangeable.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Merchant:** EnterpriseConnect Solutions  
+**Business:** Corporate connectivity and managed services  
+**Customers:** Enterprise companies and multi-branch organizations  
+**Commercial model:** Monthly recurring service charges plus additional service charges
+
+### Illustrative corporate customer
+
+**Customer:** ABC Manufacturing Group
+
+| Service | Monthly charge |
+|---|---:|
+| Head office connectivity | Rp15,000,000 |
+| Factory connectivity | Rp10,000,000 |
+| Managed network service | Rp8,000,000 |
+| Additional support service | Rp2,000,000 |
+| **Total illustrative monthly charges** | **Rp35,000,000** |
+
+This example illustrates a commercial relationship, not a claim that FlexiBill natively consolidates all service obligations into one invoice.
+
+## 3. Corporate billing models
+
+### Model A — One contract, one recurring billing obligation
+
+Suitable when a corporate customer has one standardized service and one recurring amount.
+
+```text
+CORPORATE CUSTOMER
+        |
+        v
+SERVICE CONTRACT
+        |
+        v
+RECURRING BILLING
+        |
+        v
+PAYMENT COLLECTION
+        |
+        v
+ACCOUNT RECONCILIATION
+```
+
+### Model B — One corporate customer, multiple billing obligations
+
+Suitable when a corporate customer receives multiple services or has different billing arrangements.
+
+```text
+           CORPORATE CUSTOMER
+                   |
+          +--------+--------+
+          |        |        |
+          v        v        v
+       SERVICE A SERVICE B SERVICE C
+          |        |        |
+          v        v        v
+       BILL A    BILL B    BILL C
+          |        |        |
+          v        v        v
+       PAYMENT   PAYMENT   PAYMENT
+          |        |        |
+          +--------+--------+
+                   |
+                   v
+          CORPORATE RECONCILIATION
+```
+
+Each obligation should retain its own billing reference even when the merchant reports them under one corporate account.
+
+### Model C — Account-based periodic billing
+
+Suitable when a customer is billed based on an agreed account-level cycle or calendar date.
+
+Potential examples:
+
+- Monthly service charges.
+- Periodic facility fees.
+- Corporate account charges.
+- Agreed account billing cycles.
+
+Evaluate FlexiBill Account Billing for this model.
+
+### Model D — Contract-based billing with variable charges
+
+Suitable when charges depend on contract terms, service quantities, or external calculations.
+
+The merchant's contract and operational systems should calculate the commercial obligation. FlexiBill's role depends on the validated billing and integration model.
+
+Do not assume native real-time usage metering or automatic enterprise contract interpretation.
+
+## 4. Core data model
+
+| Object | Meaning | Example |
+|---|---|---|
+| Corporate customer | Legal or commercial customer | ABC Manufacturing |
+| Customer account | Billing account maintained by merchant | ACC-001 |
+| Contract | Commercial agreement | CTR-001 |
+| Service | Purchased business service | Managed Network |
+| Department / branch | Internal organizational reference | Factory A |
+| Billing obligation | Individual amount due | BILL-001 |
+| Billing period | Period being charged | November 2026 |
+| Payment transaction | Collection attempt or result | TXN-001 |
+| Account balance | Merchant-calculated outstanding amount | Rp35,000,000 |
+
+### Recommended relationship
+
+```text
+CORPORATE CUSTOMER
+       |
+       v
+CUSTOMER ACCOUNT
+       |
+       v
+COMMERCIAL CONTRACT
+       |
+       +----------------------+
+       |                      |
+       v                      v
+   SERVICE A              SERVICE B
+       |                      |
+       v                      v
+ BILLING OBLIGATION A    BILLING OBLIGATION B
+       |                      |
+       v                      v
+ PAYMENT A               PAYMENT B
+       |                      |
+       +----------+-----------+
+                  |
+                  v
+       CORPORATE ACCOUNT REPORTING
+```
+
+The merchant's ERP or CRM should remain the authoritative source for corporate account hierarchy, contract ownership, and financial accounting.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text
+       CORPORATE MERCHANT SYSTEM
+             ERP / CRM
+                  |
+                  v
+       CUSTOMER ACCOUNT MASTER
+                  |
+                  v
+        CONTRACT / SERVICE DATA
+                  |
+                  v
+        BILLING CALCULATION
+                  |
+                  v
+       FLEXIBILL BILLING LAYER
+       Collection / Plan / Pricing
+                  |
+                  v
+         BILLING OBLIGATIONS
+                  |
+                  v
+          PAYMENT COLLECTION
+                  |
+             +----+----+
+             |         |
+             v         v
+          SUCCESS    FAILURE
+             |         |
+             v         v
+       PAYMENT RESULT / RECOVERY
+             |         |
+             +----+----+
+                  |
+                  v
+          API / WEBHOOK / EXPORT
+                  |
+                  v
+          MERCHANT ERP / FINANCE
+                  |
+                  v
+          ACCOUNT RECONCILIATION
+```
+
+### System responsibility
+
+| Responsibility | Primary owner |
+|---|---|
+| Corporate customer master | Merchant CRM / ERP |
+| Customer account hierarchy | Merchant |
+| Contract management | Merchant |
+| Service provisioning | Merchant |
+| Usage calculation | Merchant or external system |
+| Billing calculation | Merchant or agreed billing configuration |
+| Billing and collection orchestration | FlexiBill, within validated scope |
+| Payment processing | DOKU payment infrastructure |
+| Payment status | DOKU and integrated systems |
+| Accounting and receivables | Merchant ERP / finance |
+| Credit and collection policy | Merchant |
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Define corporate customer segments
+
+Example:
+
+| Segment | Billing pattern |
+|---|---|
+| SME | Standard monthly service |
+| Mid-market | Multiple recurring services |
+| Enterprise | Contract-based recurring charges |
+| Multi-branch | Multiple service locations |
+| Corporate group | Multiple legal entities or accounts |
+
+Do not assume that customer segments automatically create account hierarchy or consolidated invoicing.
+
+### Step 2 — Define Collection structure
+
+Illustrative Collections:
+
+- Corporate Connectivity.
+- Managed Services.
+- Enterprise Software.
+- Facility Services.
+- Logistics Services.
+- Corporate Membership.
+
+Choose a structure that supports operational ownership, reporting, and pricing governance.
+
+### Step 3 — Define Plans and Pricing
+
+Example:
+
+| Plan | Pricing model | Example |
+|---|---|---:|
+| Basic Connectivity | Flat Fee | Rp5,000,000/month |
+| Enterprise Connectivity | Flat Fee | Rp15,000,000/month |
+| Managed Network | Flat Fee | Rp8,000,000/month |
+| Additional Support | Flat Fee | Rp2,000,000/month |
+| Variable Service | Usage-based calculation outside FlexiBill, unless validated | Merchant-defined |
+
+FlexiBill supports documented pricing structures such as Flat Fee, Per Unit, Tiered, Volume, Stairstep, and Open Amount, subject to the applicable product configuration.
+
+A pricing model's existence does not establish that every enterprise contract, discount, commitment, or usage calculation can be represented natively.
+
+### Step 4 — Choose the billing model
+
+| Requirement | Candidate model | Validation |
+|---|---|---|
+| Same monthly recurring charge | Subscription / recurring billing | Confirm configuration |
+| Calendar-date account billing | Account Billing | Confirm applicable account setup |
+| Merchant-calculated variable charge | API / H2H | Confirm billing creation flow |
+| Multiple independent services | Multiple billing obligations | Confirm account mapping |
+| Complex ERP-controlled billing | Hybrid | Agree system ownership |
+| Merchant-controlled scheduler | Merchant Hosted Scheduler | Confirm merchant and country eligibility |
+
+### Step 5 — Define account and billing references
+
+Recommended mapping:
+
+| Field | Purpose |
+|---|---|
+| Corporate Customer ID | Customer master reference |
+| Account ID | Merchant billing account |
+| Legal Entity ID | Legal entity reference |
+| Contract ID | Commercial agreement |
+| Service ID | Purchased service |
+| Branch ID | Service location |
+| Billing ID | Individual obligation |
+| Billing Period | Period being charged |
+| Amount Due | Outstanding obligation |
+| Payment Reference | Collection matching |
+| Transaction ID | Payment transaction |
+
+These are recommended integration fields. Confirm which can be stored natively, transmitted through APIs, or retained in the merchant system.
+
+### Step 6 — Configure the collection journey
+
+Define:
+
+- Billing generation.
+- Billing notification.
+- Due date.
+- Eligible payment methods.
+- Payment confirmation.
+- Failed-payment handling.
+- Reconciliation.
+- Overdue policy.
+- Customer support ownership.
+
+### Step 7 — Define account reporting
+
+The merchant should be able to reconcile:
+
+1. Corporate customer.
+2. Account.
+3. Contract.
+4. Service.
+5. Billing obligation.
+6. Payment transaction.
+7. Accounting entry.
+
+The merchant ERP should remain the financial system of record.
+
+## 7. Account Billing — when to use it
+
+Account Billing is relevant when the merchant's commercial model is organized around a customer account and a calendar-date billing cycle.
+
+Potential fit:
+
+- A corporate account receives a monthly charge.
+- Billing is associated with an agreed account cycle.
+- The merchant needs periodic account-level collection.
+
+Before implementation, validate:
+
+- Account creation and lifecycle.
+- Billing-date configuration.
+- Amount calculation and bill generation.
+- Supported payment methods.
+- Payment result and status synchronization.
+- Retry and overdue behavior.
+- Account-level reporting.
+- Country and merchant eligibility.
+
+### Account Billing versus individual subscription billing
+
+| Dimension | Subscription billing | Account Billing |
+|---|---|---|
+| Primary reference | Subscription / membership | Billing account |
+| Commercial basis | Plan or subscription | Account-based obligation |
+| Billing trigger | Subscription schedule | Account billing cycle |
+| Suitable use | Recurring service or membership | Periodic account charge |
+| Customer structure | Subscriber relationship | Account relationship |
+| Complex account hierarchy | Validate separately | Validate separately |
+| Consolidated invoice | Not assumed | Not assumed |
+
+Account Billing should not be interpreted as automatic enterprise receivables management or native multi-entity consolidation.
+
+## 8. End-to-end merchant journey
+
+### Journey A — Monthly recurring corporate service
+
+```text
+CONTRACT SIGNED
+       |
+       v
+CUSTOMER ACCOUNT CREATED
+       |
+       v
+SERVICE ACTIVATED
+       |
+       v
+BILLING CONFIGURED
+       |
+       v
+MONTHLY BILLING
+       |
+       v
+CUSTOMER NOTIFIED
+       |
+       v
+PAYMENT COLLECTION
+       |
+       v
+PAYMENT RESULT
+       |
+       v
+ERP RECONCILIATION
+```
+
+### Journey B — Multiple services under one customer
+
+```text
+CORPORATE CUSTOMER
+       |
+       v
+ACCOUNT / CONTRACT MAPPING
+       |
+       +------------------+
+       |                  |
+       v                  v
+  SERVICE A           SERVICE B
+       |                  |
+       v                  v
+  BILLING A            BILLING B
+       |                  |
+       v                  v
+  PAYMENT A            PAYMENT B
+       |                  |
+       +--------+---------+
+                |
+                v
+       ACCOUNT-LEVEL REPORTING
+```
+
+### Journey C — Failed corporate payment
+
+1. Billing obligation becomes due.
+2. Payment collection is attempted.
+3. Payment fails or remains pending.
+4. Payment status is synchronized.
+5. Merchant identifies the affected account and obligation.
+6. Merchant applies the agreed recovery and credit policy.
+7. Customer is notified.
+8. Successful recovery is reconciled to the original obligation.
+
+A failed payment does not automatically suspend a corporate service. Service suspension remains subject to merchant policy and system integration.
+
+## 9. Corporate customer experience
+
+### Customer interfaces
+
+| Interface | Purpose |
+|---|---|
+| Corporate customer portal | View supported account and billing information |
+| Billing Portal | Access supported billing and payment functions |
+| Pricing Table | Present standardized service pricing where suitable |
+| Payment checkout | Pay an eligible billing obligation |
+| ERP / procurement system | Internal customer approval and processing |
+| Notifications | Payment due and payment result communications |
+
+### Experience principles
+
+- Identify the corporate account clearly.
+- Display the correct contract or service reference.
+- Distinguish each billing obligation.
+- Show amount due and billing period.
+- Make payment references easy to copy and reconcile.
+- Provide clear payment status.
+- Avoid exposing one department's information to another without authorization.
+- Support corporate finance and procurement approval workflows through the merchant's systems.
+
+## 10. Payment management and reconciliation
+
+### Payment scenarios
+
+| Scenario | Recommended handling |
+|---|---|
+| One bill paid successfully | Update the matching obligation |
+| Multiple bills paid separately | Reconcile each obligation |
+| Partial payment | Validate allocation and remaining-balance handling |
+| Duplicate payment | Detect and resolve before financial posting |
+| Payment pending | Avoid duplicate collection |
+| Wrong reference | Investigate and reconcile manually |
+| Overdue payment | Apply merchant collection policy |
+| Payment from another payer | Validate payer authorization and reference mapping |
+
+### Important distinction
+
+Payment collection and financial allocation are different activities.
+
+For example, a corporate customer may transfer one amount intended to settle several service obligations. The merchant must define how that payment is allocated.
+
+Do not assume FlexiBill automatically performs cross-obligation allocation or consolidated settlement.
+
+### Recommended reconciliation fields
+
+- Corporate Customer ID.
+- Account ID.
+- Contract ID.
+- Billing ID.
+- Billing period.
+- Amount due.
+- Amount paid.
+- Payment status.
+- Transaction ID.
+- Payment timestamp.
+- Reconciliation status.
+
+## 11. Failure and exception management
+
+| Scenario | Business risk | Recommended control |
+|---|---|---|
+| Customer account mismatch | Wrong account settlement | Reference validation |
+| Duplicate billing | Overcollection | Idempotency and billing controls |
+| Duplicate payment event | Incorrect financial posting | Event deduplication |
+| Failed payment | Overdue receivable | Recovery workflow |
+| Contract changed | Incorrect amount | Merchant-side contract recalculation |
+| Service terminated | Future billing continues | Stop or adjust billing |
+| Account closed | Unresolved obligations | Closure and reconciliation process |
+| Branch reassignment | Incorrect allocation | Merchant master-data update |
+| Partial settlement | Incorrect outstanding balance | Merchant allocation rules |
+| Unmatched payment | Reconciliation backlog | Exception queue |
+
+## 12. Merchant operational dashboard
+
+| Dashboard | Key information |
+|---|---|
+| Corporate billing overview | Customers, accounts, and billing obligations |
+| Account receivables | Due and overdue amounts |
+| Billing performance | Generated, paid, failed, and outstanding |
+| Service billing | Charges by service |
+| Contract monitoring | Active and terminated commercial relationships |
+| Payment performance | Success and failure by method |
+| Recovery | Recovered and unrecovered obligations |
+| Reconciliation | Matched and unmatched transactions |
+| Exception management | Duplicate, partial, and incorrect payments |
+
+Confirm which dashboards and dimensions are native versus merchant-side reporting requirements.
+
+## 13. Merchant value proposition
+
+| Value dimension | Potential benefit |
+|---|---|
+| Billing automation | Reduce repetitive billing operations |
+| Collection visibility | Monitor outstanding obligations |
+| Payment integration | Connect billing with payment collection |
+| Reconciliation | Improve reference consistency |
+| Enterprise scalability | Support repeatable service billing patterns |
+| Operational efficiency | Reduce manual follow-up |
+| Finance visibility | Improve collection monitoring |
+| Integration flexibility | Connect ERP and corporate systems |
+
+These are intended outcomes, not guaranteed performance improvements.
+
+## 14. Indonesia and Malaysia considerations
+
+Validate each country separately.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Confirm eligibility | Confirm eligibility |
+| Account Billing | Validate product availability and setup | Validate product availability and setup |
+| Recurring billing | Confirm merchant and payment-method eligibility | Confirm merchant and payment-method eligibility |
+| API / H2H | Confirm integration scope | Confirm integration scope |
+| Merchant Hosted Scheduler | Validate documented eligibility | Do not assume parity; validate |
+| Billing Portal | Confirm supported functions | Confirm supported functions |
+| Payment channels | Confirm eligible methods | Confirm eligible methods |
+| Notifications | Confirm supported channels | Confirm supported channels |
+| Reconciliation | Confirm fields and exports | Confirm fields and exports |
+| Currency and tax | Confirm local requirements | Confirm local requirements |
+
+**Country gate:** No ID capability should be presented as available in MY until Product, Engineering, and Operations validate it.
+
+## 15. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| B2B-001 | Create corporate customer mapping | Correct merchant-side reference |
+| B2B-002 | Configure recurring service | Correct amount and interval |
+| B2B-003 | Configure account billing | Correct account and cycle |
+| B2B-004 | Generate billing obligation | Correct customer and reference |
+| B2B-005 | Successful payment | Correct obligation updated |
+| B2B-006 | Failed payment | Correct failure status |
+| B2B-007 | Pending payment | No duplicate collection |
+| B2B-008 | Multiple service obligations | Each obligation independently traceable |
+| B2B-009 | Partial settlement | Correct allocation and outstanding amount |
+| B2B-010 | Duplicate billing event | No duplicate financial obligation |
+| B2B-011 | Contract termination | Future billing handled correctly |
+| B2B-012 | Account closure | Open obligations reconciled |
+| B2B-013 | Webhook processing | Status synchronized reliably |
+| B2B-014 | ERP reconciliation | Billing and transaction references match |
+| B2B-015 | Country-specific validation | ID and MY results independently approved |
+
+## 16. Go-live checklist
+
+### Commercial
+- [ ] Corporate segments identified.
+- [ ] Contract and service catalogue approved.
+- [ ] Billing cycles defined.
+- [ ] Payment terms approved.
+- [ ] Overdue and credit policies documented.
+
+### Product and integration
+- [ ] Billing model selected.
+- [ ] Account Billing fit validated, where applicable.
+- [ ] Collection and Plan structure validated.
+- [ ] Customer and account references mapped.
+- [ ] Contract and service identifiers mapped.
+- [ ] API/H2H or hybrid architecture approved.
+- [ ] Webhook and reconciliation behavior tested.
+
+### Payment
+- [ ] Payment methods confirmed.
+- [ ] Successful payment tested.
+- [ ] Failed and pending outcomes tested.
+- [ ] Partial and duplicate payment handling agreed.
+- [ ] Refund and adjustment workflow validated.
+
+### Operations
+- [ ] Finance reconciliation approved.
+- [ ] Outstanding-balance monitoring ready.
+- [ ] Customer support ownership assigned.
+- [ ] Exception management process documented.
+- [ ] Country-specific readiness approved.
+
+## 17. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Enterprise account hierarchy | Parent-child customer relationships | Gap / strategic opportunity |
+| Consolidated invoicing | Combine multiple service obligations | Gap / validation required |
+| Multi-entity billing | Support complex corporate groups | Gap / strategic opportunity |
+| Cross-obligation allocation | Allocate one payment across multiple bills | Validate current capability |
+| Native contract billing | Interpret contract terms into billing | Gap / strategic opportunity |
+| Native usage aggregation | Calculate service usage automatically | Gap / future direction |
+| Real-time metering | Dynamic usage-based billing | Gap / future direction |
+| ERP connectors | Reduce custom integration effort | Integration opportunity |
+| Automated credit control | Coordinate overdue and service actions | Strategic opportunity |
+| Advanced receivables analytics | Improve enterprise collection insight | Strategic opportunity |
+
+Do not present these opportunities as released FlexiBill functionality.
+
+## 18. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Billing operations | Billing generation success rate |
+| Collection | Payment success rate |
+| Receivables | Outstanding amount and aging |
+| Recovery | Overdue recovery rate |
+| Finance operations | Reconciliation match rate |
+| Integration | Webhook processing success |
+| Operational efficiency | Manual intervention per billing cycle |
+| Customer experience | Payment completion and support contact rate |
+| Account health | Active paying corporate accounts |
+
+Define aging buckets and reporting cut-offs with Finance.
+
+## 19. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 20. Governance
+
+This is a reusable reference solution for corporate and B2B billing.
+
+Before reusing it:
+1. Validate current FlexiBill capabilities.
+2. Confirm whether Subscription or Account Billing is the correct model.
+3. Define corporate customer and account ownership.
+4. Confirm contract and service data responsibilities.
+5. Define billing and payment references.
+6. Validate partial payment and allocation requirements.
+7. Confirm ERP integration and reconciliation.
+8. Validate ID and MY separately.
+9. Obtain merchant, DOKU Product, Engineering, Finance, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-006  
+**Review trigger:** Product release, account-billing change, integration change, country expansion, or material implementation finding.
