@@ -1,1 +1,482 @@
+# FlexiBill Integration Architecture
 
+> Reference architecture for connecting merchant systems, FlexiBill billing capabilities, and DOKU payment infrastructure.
+
+**Audience:** Product, Engineering, Solution Engineering, Integration, Implementation, Operations  
+**Scope:** Indonesia and Malaysia, subject to country-specific validation  
+**Document status:** Internal reference — validate implementation details against current product and technical documentation
+
+---
+
+## 1. Executive Overview
+
+FlexiBill should be understood as a payment-connected billing orchestration capability.
+
+It connects a merchant's commercial and customer processes with billing obligations, payment collection, and payment-status synchronization.
+
+A complete implementation involves more than calling a payment API. It requires agreement on:
+
+1. Who creates and owns the customer record.
+2. Who defines the commercial product, price, and billing obligation.
+3. Who controls the billing schedule.
+4. Who generates and communicates the bill.
+5. Who initiates and processes payment.
+6. How payment outcomes are communicated.
+7. How failures, retries, and overdue obligations are handled.
+8. How the merchant reconciles billing, payment, and settlement data.
+
+The architecture must preserve clear ownership between FlexiBill, DOKU payment infrastructure, and merchant systems.
+
+### Architecture thesis
+
+**Merchant business systems define the commercial relationship. FlexiBill orchestrates supported billing workflows. DOKU payment infrastructure processes supported payment transactions. Merchant systems complete fulfillment, entitlement, and accounting activities.**
+
+This is a conceptual responsibility model, not a claim that every component is a separately deployed service or that every workflow is available in every configuration.
+
+## 2. High-Level System Context
+
+```mermaid
+flowchart TB
+    subgraph MERCHANT["Merchant Environment"]
+        CHANNEL["Website / App / Dashboard"]
+        CRM["CRM / Customer System"]
+        CORE["Core Business System"]
+        ERP["ERP / Finance / Accounting"]
+        ENT["Service / Entitlement Platform"]
+        SCHED["Merchant Scheduler (if applicable)"]
+    end
+
+    subgraph FLEXI["FlexiBill"]
+        CONFIG["Collection / Plan / Pricing"]
+        MEMBER["Member Center"]
+        BILL["Billing / Subscription Workflow"]
+        PORTAL["Customer Billing Portal"]
+        EVENT["Status / Event Integration"]
+    end
+
+    subgraph DOKU["DOKU Payment Environment"]
+        PAY["Payment Orchestration"]
+        METHOD["Supported Payment Methods"]
+        SETTLE["Settlement / Payment Reporting"]
+    end
+
+    CHANNEL --> CRM
+    CHANNEL --> MEMBER
+    CRM --> CORE
+    CORE --> CONFIG
+    CORE --> BILL
+    CONFIG --> BILL
+    MEMBER --> BILL
+    BILL --> PORTAL
+    BILL --> PAY
+    SCHED --> PAY
+    PAY --> METHOD
+    METHOD --> PAY
+    PAY --> EVENT
+    EVENT --> CORE
+    EVENT --> ERP
+    CORE --> ENT
+    PAY --> SETTLE
+    SETTLE --> ERP
+```
+
+**Diagram interpretation**
+
+- Merchant systems own business records and business decisions.
+- FlexiBill provides the configured billing and subscription workflows within the confirmed product scope.
+- DOKU payment infrastructure processes payment transactions through supported payment methods.
+- Payment outcomes must be synchronized with merchant systems using the supported integration mechanism.
+- Settlement and accounting reconciliation require their own operational controls.
+
+The diagram is conceptual. It does not define actual deployment topology, network boundaries, API endpoint names, or internal service architecture.
+
+## 3. Architecture Components and Responsibilities
+
+| Component | Primary responsibility | Key ownership question |
+|---|---|---|
+| Merchant channel | Customer-facing website, app, or sales interface | Who controls the customer experience? |
+| CRM / Customer system | Customer identity and profile | Which system is the customer master? |
+| Merchant core system | Contracts, policies, bookings, students, memberships, or other business records | Which system defines the business obligation? |
+| Merchant scheduler | Scheduling when merchant-controlled billing is used | Who triggers each billing cycle? |
+| FlexiBill configuration | Supported Collection, Plan, pricing, and billing configuration | Which configuration is authoritative? |
+| Member Center | Supported membership and member-related workflows | Which member functions are available in the intended setup? |
+| Billing workflow | Supported billing and subscription lifecycle | Who creates and maintains each billing obligation? |
+| Billing Portal | Applicable customer-facing billing interactions | Which portal functions are enabled? |
+| Payment orchestration | Payment initiation and processing | Which party owns payment processing? |
+| Payment methods | Supported payment rails and instruments | Which methods are enabled for the merchant and country? |
+| Event integration | Payment and billing status synchronization | How does the merchant receive and process updates? |
+| ERP / Finance | Accounting and financial reporting | How are transactions and obligations reconciled? |
+| Entitlement / Fulfillment | Activating or delivering the purchased service | Which merchant system authorizes fulfillment? |
+
+## 4. Four Integration Models
+
+The architecture should be selected based on the merchant's operating model and confirmed product capability.
+
+### Model A — DOKU-hosted Billing Automation
+
+<badge color="success">Reference model</badge>
+
+**Concept:** FlexiBill manages supported billing workflows in the DOKU-hosted environment.
+
+```mermaid
+flowchart LR
+    M["Merchant"] --> C["FlexiBill Configuration"]
+    C --> B["FlexiBill Billing Workflow"]
+    B --> P["DOKU Payment"]
+    P --> R["Payment Result"]
+    R --> M
+```
+
+**Merchant responsibilities**
+- Provide customer and billing information.
+- Configure or agree on billing rules.
+- Manage commercial contracts and service eligibility.
+- Consume payment results and reconcile transactions.
+- Handle business exceptions outside the confirmed FlexiBill scope.
+
+**FlexiBill responsibilities**
+- Execute configured billing workflows within supported capabilities.
+- Manage supported subscription and billing states.
+- Initiate supported payment workflows.
+- Provide applicable billing and payment information.
+
+**Best suited for**
+- Merchants who want a DOKU-hosted billing operating model.
+- Businesses with relatively standard recurring billing needs.
+- Merchants seeking lower custom scheduling and billing-engine development effort.
+
+**Validate before implementation**
+- Billing schedule and interval options.
+- Collection and Plan configuration.
+- Pricing model.
+- Subscription lifecycle behavior.
+- Customer notification and portal capabilities.
+- Supported payment methods and authorization requirements.
+- API, export, and reporting needs.
+
+### Model B — Merchant API / H2H Integration
+
+**Concept:** Merchant systems interact with FlexiBill through supported APIs and integration mechanisms.
+
+```mermaid
+flowchart TB
+    CORE["Merchant Core System"] --> API["Merchant Integration Layer"]
+    API --> FB["FlexiBill Supported APIs"]
+    FB --> PAY["DOKU Payment"]
+    PAY --> EVT["Supported Events / Responses"]
+    EVT --> API
+    API --> CORE
+    CORE --> ENT["Merchant Fulfillment"]
+```
+
+**Merchant responsibilities**
+- Own business rules and source data.
+- Implement API integration.
+- Maintain customer and contract records.
+- Process payment and billing updates.
+- Manage merchant-side fulfillment and exception handling.
+
+**FlexiBill responsibilities**
+- Expose supported API operations.
+- Execute supported billing and payment workflows.
+- Return applicable responses and status information.
+
+**Best suited for**
+- Merchants with engineering capability.
+- Platforms requiring embedded billing experiences.
+- Merchants with established CRM, ERP, or core business systems.
+
+**Validate before implementation**
+- Exact API operations and schemas.
+- Supported subscription and billing operations.
+- Member and customer management API coverage.
+- Pricing and plan configuration API coverage.
+- Authentication and authorization.
+- Webhook availability and event semantics.
+- Idempotency and duplicate-request behavior.
+- Rate limits, timeout behavior, and error handling.
+
+Do not assume that every dashboard capability has an equivalent public API.
+
+### Model C — Hybrid Integration
+
+**Concept:** Merchant systems retain selected business logic while FlexiBill manages supported billing and payment workflows.
+
+```mermaid
+flowchart TB
+    subgraph M["Merchant-Owned Layer"]
+        DATA["Customer / Contract Data"]
+        CALC["Business Rules / Amount Calculation"]
+        USAGE["Usage Calculation (if applicable)"]
+        ADAPT["Integration Adapter"]
+    end
+
+    subgraph F["FlexiBill Layer"]
+        BILL["Supported Billing Workflow"]
+        SUB["Subscription / Billing State"]
+    end
+
+    subgraph D["DOKU Payment Layer"]
+        PAY["Payment Processing"]
+        RESULT["Payment Result"]
+    end
+
+    DATA --> CALC
+    USAGE --> CALC
+    CALC --> ADAPT
+    ADAPT --> BILL
+    BILL --> SUB
+    SUB --> PAY
+    PAY --> RESULT
+    RESULT --> ADAPT
+    ADAPT --> DATA
+```
+
+**Example**
+
+A SaaS merchant calculates customer usage in its own platform, determines the amount due, and uses a supported FlexiBill workflow for billing and payment collection.
+
+This does not imply that FlexiBill provides native real-time usage metering or automatic entitlement management.
+
+**Best suited for**
+- Merchants with complex commercial rules.
+- Usage-based or event-driven billing requirements.
+- Businesses that want to retain control over their core platform.
+- Merchants combining custom business processes with standardized payment workflows.
+
+**Key design requirement**
+
+Define a clear contract for every handoff:
+
+- Customer identifier.
+- Merchant billing identifier.
+- Billing amount and currency.
+- Due date or collection timing.
+- Billing status.
+- Payment reference.
+- Payment outcome.
+- Error and recovery status.
+
+### Model D — Merchant Hosted Scheduler
+
+**Concept:** The merchant owns the billing schedule and triggers supported payment workflows.
+
+```mermaid
+sequenceDiagram
+    participant S as Merchant Scheduler
+    participant C as Merchant Core
+    participant D as DOKU / FlexiBill Integration
+    participant P as Payment Infrastructure
+
+    S->>C: Identify obligations due
+    C->>C: Validate amount and eligibility
+    C->>D: Initiate supported payment workflow
+    D->>P: Process payment
+    P-->>D: Payment outcome
+    D-->>C: Supported response / event
+    C->>C: Update obligation status
+```
+
+**Important scope note:** Merchant Hosted Scheduler has been documented for the Indonesian Business Account context. Confirm current eligibility, product configuration, and technical requirements before proposing it. Do not assume Malaysia availability or identical behavior.
+
+**Best suited for**
+- Merchants that require control over billing triggers.
+- Businesses with their own scheduling engine.
+- Specific payment automation patterns supported by the relevant merchant setup.
+
+**Validate**
+- Merchant eligibility.
+- Country and account scope.
+- Supported payment initiation mechanism.
+- Credential and authorization model.
+- Retry and duplicate-processing controls.
+- Payment result synchronization.
+- Operational monitoring.
+
+## 5. Architecture Selection Matrix
+
+| Decision factor | Billing Automation | API / H2H | Hybrid | Merchant Scheduler |
+|---|---|---|---|---|
+| Billing workflow ownership | FlexiBill, within supported scope | Shared by agreed API contract | Shared | Merchant controls scheduling |
+| Merchant engineering effort | Lower for standard workflows | Higher | Medium to high | Medium to high |
+| Custom business logic | Depends on supported configuration | Merchant-owned | Merchant-owned for selected logic | Merchant-owned |
+| Billing schedule control | FlexiBill configuration | Depends on design | Shared | Merchant |
+| Embedded customer experience | Validate supported interfaces | Merchant-led | Merchant-led or shared | Merchant-led |
+| Complex usage calculation | External or validation required | Merchant-led | Merchant-led | Merchant-led |
+| Operational responsibility | Shared | Shared | Shared | Shared |
+| Country eligibility | Validate | Validate | Validate | Explicitly validate |
+
+**Selection rule:** Choose the simplest model that satisfies the merchant's confirmed requirements without introducing unnecessary custom orchestration.
+
+## 6. Core Data Flow
+
+A standard recurring collection can be understood as the following sequence.
+
+1. Merchant creates or identifies a customer.
+2. Merchant defines the commercial relationship and billing obligation.
+3. Required customer and payment authorization steps are completed.
+4. The relevant billing configuration or API workflow is established.
+5. A billing cycle becomes due.
+6. The applicable FlexiBill or merchant-owned process triggers billing.
+7. A supported payment workflow is initiated.
+8. Payment infrastructure processes the transaction.
+9. Payment outcome is returned through the supported response or event mechanism.
+10. Merchant updates its business record.
+11. Merchant activates, continues, restricts, or otherwise manages service according to its own rules.
+12. Billing and payment records are reconciled.
+
+The exact sequence varies by integration model and payment method.
+
+## 7. State Ownership and Synchronization
+
+Do not use one generic status field to represent every business and payment state.
+
+A robust design separates at least three concepts:
+
+| State domain | Example states | Typical owner |
+|---|---|---|
+| Business obligation | Created, due, overdue, cancelled, fulfilled | Merchant core / agreed billing owner |
+| Billing workflow | Configured, scheduled, generated, expired, completed | FlexiBill or merchant scheduler |
+| Payment transaction | Initiated, pending, successful, failed, expired, reversed where applicable | DOKU payment flow and synchronized merchant record |
+
+These are conceptual examples, not a list of guaranteed FlexiBill API status values.
+
+### Synchronization rules
+
+- Store the merchant's unique business reference.
+- Store the applicable billing reference.
+- Store the DOKU payment transaction reference.
+- Record event timestamps and processing timestamps separately.
+- Handle repeated events safely.
+- Do not treat a timeout as proof of payment failure.
+- Verify the authoritative payment status before taking irreversible action.
+- Maintain a recovery process for missing or delayed updates.
+
+## 8. Integration Contract Checklist
+
+Before development begins, document the following.
+
+| Area | Required definition |
+|---|---|
+| Merchant identity | Merchant ID and environment |
+| Customer identity | Stable customer reference and mapping |
+| Business reference | Contract, policy, booking, account, or other obligation reference |
+| Billing reference | Unique billing or invoice identifier |
+| Amount | Amount, currency, precision, and calculation owner |
+| Schedule | Trigger, interval, timezone, due date, and cutoff |
+| Payment method | Supported method and authorization requirements |
+| API security | Authentication and credential handling |
+| Request control | Idempotency and duplicate prevention |
+| Response handling | Synchronous response interpretation |
+| Event handling | Webhook or other supported status update mechanism |
+| Error handling | Retry, timeout, and permanent failure behavior |
+| Reconciliation | Transaction and settlement matching |
+| Fulfillment | Merchant-side service activation rules |
+| Monitoring | Logs, alerts, dashboards, and incident owner |
+
+## 9. Security and Resilience Design
+
+Technical architecture must account for:
+
+- Secure credential storage and rotation.
+- Least-privilege access.
+- Appropriate protection of customer and payment data.
+- Encrypted communication using supported security standards.
+- Signature or authenticity verification where required by the official integration contract.
+- Idempotent processing where supported.
+- Duplicate event handling.
+- Timeout and delayed response scenarios.
+- Controlled retry behavior.
+- Audit logs and traceability.
+- Data retention and deletion requirements.
+
+Never store or log sensitive authentication credentials, full payment credentials, or other prohibited sensitive data.
+
+Exact security requirements must follow current DOKU technical documentation and applicable country requirements.
+
+## 10. Observability and Operational Monitoring
+
+A production architecture should monitor more than API availability.
+
+| Monitoring area | Example metric |
+|---|---|
+| Integration health | API success rate, latency, timeout rate |
+| Billing generation | Scheduled versus generated billing count |
+| Payment processing | Payment success and failure rate |
+| Event delivery | Received, delayed, duplicate, and failed event counts |
+| Synchronization | Billing/payment status mismatch count |
+| Recovery | Retry success rate and unresolved failures |
+| Reconciliation | Unmatched transaction and settlement records |
+| Customer impact | Overdue obligations and unresolved payment cases |
+
+Define alert thresholds with the relevant operational owners. Do not assume universal thresholds across merchant types.
+
+## 11. Indonesia and Malaysia Validation
+
+Every solution design must record country-specific findings.
+
+| Validation topic | Indonesia | Malaysia |
+|---|---|---|
+| Merchant eligibility | Confirm | Confirm |
+| Supported payment methods | Confirm | Confirm |
+| Recurring authorization | Confirm | Confirm |
+| API and webhook coverage | Confirm | Confirm |
+| Merchant Hosted Scheduler | Documented scope requires validation | Do not assume availability |
+| Settlement and reporting | Confirm | Confirm |
+| Operational and support process | Confirm | Confirm |
+| Local regulatory requirements | Confirm | Confirm |
+
+A successful implementation in one country is not evidence of availability in another.
+
+## 12. Architecture Review Checklist
+
+Before approving the solution, confirm:
+
+- [ ] Merchant business model and billing obligation are documented.
+- [ ] Integration model is selected and justified.
+- [ ] System context and component responsibilities are agreed.
+- [ ] Customer and billing identifiers are mapped.
+- [ ] Amount calculation and schedule ownership are defined.
+- [ ] Payment authorization requirements are confirmed.
+- [ ] API contracts are verified against official documentation.
+- [ ] Webhook and status synchronization behavior is confirmed.
+- [ ] Duplicate and timeout handling is designed.
+- [ ] Failure recovery and reconciliation ownership are assigned.
+- [ ] Fulfillment and entitlement decisions remain with the correct merchant system.
+- [ ] Security and data protection requirements are reviewed.
+- [ ] Country-specific availability is confirmed.
+- [ ] Testing and go-live acceptance criteria are documented.
+
+## 13. Known Gaps and Validation Boundaries
+
+The following should not be assumed to be native FlexiBill capabilities without explicit confirmation:
+
+- Real-time usage metering and aggregation.
+- Wallet and entitlement management.
+- Universal plan-change and proration APIs.
+- Native multi-product and add-on orchestration.
+- Customer or account hierarchy.
+- Consolidated invoicing across multiple obligations.
+- Global tax and currency orchestration.
+- Revenue recognition and accounting automation.
+- Universal cross-country payment authorization portability.
+
+Where these are required, define a merchant-owned component, integration dependency, confirmed product capability, or future product requirement.
+
+## 14. Related Technical Playbooks
+
+- [API & H2H Integration](02-api-and-h2h-integration.md)
+- [Webhook & Event Management](03-webhook-and-event-management.md)
+- [Billing Orchestration](04-billing-orchestration.md)
+- [Payment Authorization & Collection](05-payment-authorization-and-collection.md)
+- [Error Handling & Recovery](06-error-handling-and-recovery.md)
+- [Reconciliation & Reporting](07-reconciliation-and-reporting.md)
+- [Security & Data Protection](08-security-and-data-protection.md)
+- [Testing & Certification](09-testing-and-certification.md)
+- [Technical Solution Patterns](10-technical-solution-patterns.md)
+
+---
+
+**FlexiBill Integration Architecture**
+
+*Design the ownership. Define the contract. Orchestrate the billing. Verify the payment. Reconcile the outcome.*
