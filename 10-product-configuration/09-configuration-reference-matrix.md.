@@ -1,1 +1,475 @@
+# FlexiBill Configuration Reference Matrix
 
+**Phase:** 2 — Product Configuration  
+**Product:** DOKU FlexiBill  
+**Audience:** Product, Engineering, Implementation, Sales, Partnership, Operations, Support  
+**Markets:** Indonesia (ID) and Malaysia (MY)  
+**Status:** Internal reference — validate current product behavior and country availability before merchant commitment.
+
+---
+
+## 1. Purpose
+
+This document consolidates the FlexiBill Product Configuration Playbooks into one practical reference.
+
+Use it to answer five questions:
+
+1. What does the merchant want to achieve?
+2. Which FlexiBill components are relevant?
+3. What information and configuration are required?
+4. What dependencies or limitations must be checked?
+5. Who must validate the solution before go-live?
+
+This matrix is a configuration and implementation guide. It is not a declaration that every capability is natively available in every FlexiBill environment.
+
+## 2. FlexiBill configuration map
+
+The following is a conceptual view of how the main components relate.
+
+```text
+                 MERCHANT
+                    |
+                    v
+              COLLECTION
+          Customer / Billing Group
+                    |
+                    v
+                  PLAN
+          Product / Service Rules
+                    |
+                    v
+             PRICING CONFIG
+       Price / Frequency / Duration
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+     PRICING TABLE       DIRECT/API FLOW
+     Offer Discovery      Integration
+          |                   |
+          +---------+---------+
+                    |
+                    v
+             MEMBER CENTER
+          Customer Relationship
+                    |
+                    v
+              SUBSCRIPTION
+          Recurring Relationship
+                    |
+                    v
+             BILLING ENGINE
+          Bill / Invoice Creation
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+     ACCOUNT BILLING     RECURRING BILLING
+     Calendar-oriented   Subscription-oriented
+          |                   |
+          +---------+---------+
+                    |
+                    v
+             PAYMENT MANAGEMENT
+         Auto-debit / Payment Collection
+                    |
+                    v
+             BILLING PORTAL
+       Customer Billing Experience
+                    |
+                    v
+          MONITORING / RECONCILIATION
+```
+
+This diagram shows the conceptual relationships, not a mandatory technical sequence. Exact integration paths and component dependencies must be confirmed for each solution.
+
+## 3. Playbook directory
+
+| No. | Playbook | Primary purpose | When to use |
+|---|---|---|---|
+| 01 | Collection Management | Organize customer and billing relationships | Merchant needs customer or billing grouping |
+| 02 | Plan and Pricing Configuration | Define products, prices, and billing rules | Merchant needs recurring or other pricing models |
+| 03 | Pricing Table | Present offers and support customer acquisition | Merchant needs a customer-facing offer or payment entry point |
+| 04 | Member Center | Manage customer/member identity relationships | Merchant needs customer registration or member association |
+| 05 | Billing Portal | Provide a customer-facing billing interface | Merchant needs billing visibility or supported self-service |
+| 06 | Account Billing | Organize billing around an account and calendar | Merchant needs account-oriented billing cycles |
+| 07 | Subscription Lifecycle | Manage the subscription journey | Merchant needs recurring subscription operations |
+| 08 | Payment Management | Collect and reconcile payments | Merchant needs auto-debit, payment handling, or recovery |
+| 09 | Configuration Reference Matrix | Connect the configuration components | Teams need an end-to-end implementation reference |
+
+## 4. Merchant requirement-to-component matrix
+
+Start with the merchant's business requirement rather than selecting a feature first.
+
+| Merchant requirement | Relevant component | Key question |
+|---|---|---|
+| Group customers by service or billing relationship | Collection | How should customers be grouped? |
+| Define a product or service | Plan | What is being sold? |
+| Configure a fixed recurring price | Pricing | What amount and frequency apply? |
+| Charge based on units or quantity | Pricing | Where does the quantity come from and who calculates it? |
+| Offer different price tiers | Pricing | Which pricing model and calculation rules apply? |
+| Publish an offer for customer purchase | Pricing Table | Where will customers discover and select the offer? |
+| Register and identify customers | Member Center | What identifies a customer uniquely? |
+| Display billing information to customers | Billing Portal | Which information and self-service actions are enabled? |
+| Bill customers on a common calendar date | Account Billing | Who owns the billing calendar? |
+| Renew a recurring service | Subscription Lifecycle | What defines the renewal event? |
+| Collect recurring payments | Payment Management | Which authorized payment method is eligible? |
+| Recover failed payments | Payment Management + Subscription Lifecycle | What is the retry and recovery policy? |
+| Change an existing subscription | Subscription Lifecycle | Is the change native, API-driven, or merchant-managed? |
+| Reconcile collected payments | Payment Management | How are payments mapped to billing records? |
+
+## 5. Configuration input checklist
+
+Collect the relevant information before implementation.
+
+| Configuration area | Required merchant information | Validation owner |
+|---|---|---|
+| Merchant setup | Merchant identity, country, account and eligibility | Implementation / Operations |
+| Collection | Customer grouping and unique identifiers | Merchant / Implementation |
+| Plan | Product or service definition | Merchant / Product |
+| Pricing | Amount, model, frequency, tax and discount rules | Merchant / Product |
+| Pricing Table | Offer details, content, channel and destination | Merchant / Implementation |
+| Member Center | Registration fields and identity mapping | Merchant / Engineering |
+| Billing Portal | Customer-facing requirements and permissions | Product / Engineering |
+| Account Billing | Billing calendar and account relationship | Merchant / Product |
+| Subscription | Start date, duration, renewal and termination rules | Merchant / Implementation |
+| Payment | Payment methods and authorization requirements | Payment / Partnership |
+| Recovery | Retry policy, grace period and escalation | Merchant / Operations |
+| Reconciliation | References, reports and exception ownership | Finance / Operations |
+
+## 6. Pricing configuration reference
+
+Select the pricing model according to the merchant's commercial model.
+
+| Pricing model | Conceptual use case | Example | Validation |
+|---|---|---|---|
+| Flat Fee | Fixed charge per billing period | Rp500,000 per month | Confirm configuration and frequency |
+| Per Unit | Charge based on quantity | Rp10,000 per unit | Confirm quantity source and calculation |
+| Tiered | Different rates across consumption bands | Rate varies by tier | Confirm exact calculation behavior |
+| Volume | One applicable rate based on volume tier | All units charged at the achieved tier rate | Confirm exact calculation behavior |
+| Stairstep | Fixed charge based on selected band | Fixed fee for a selected usage band | Confirm exact calculation behavior |
+| Open Amount | Customer or merchant supplies an amount | Variable tuition or contribution | Confirm amount controls and limits |
+
+These descriptions explain the commercial models. They do not replace validation of exact FlexiBill calculation rules.
+
+### Pricing configuration decisions
+
+Before go-live, establish:
+
+- Base price.
+- Currency.
+- Billing frequency.
+- Billing start date.
+- Duration or number of charges.
+- End condition.
+- Tax treatment.
+- Coupon or discount.
+- Quantity source, if applicable.
+- Rounding and adjustment rules.
+- Treatment of changes during an active billing period.
+
+## 7. Billing model decision matrix
+
+| Requirement | Account Billing | Subscription Billing |
+|---|---|---|
+| Common customer billing calendar | Potential fit | Validate billing-anchor options |
+| Individual recurring subscription | Evaluate against account model | Typical fit |
+| Fixed monthly membership | Evaluate merchant workflow | Typical fit |
+| Multiple services under one customer account | Validate account structure | Validate subscription relationships |
+| Variable account-level charge | Validate amount source and calculation | Validate pricing and integration |
+| Calendar-oriented billing | Intended consideration | Validate configured schedule |
+| Subscription duration and renewal | Validate relationship | Core lifecycle consideration |
+
+Do not select a billing model solely based on the word "monthly." The merchant's account structure, billing-date rules, and customer relationship determine the appropriate design.
+
+## 8. Customer experience component matrix
+
+| Customer activity | Primary interface | Supporting component |
+|---|---|---|
+| Discover a product or offer | Pricing Table | Merchant website, social or other channel |
+| Select a plan | Pricing Table or integrated flow | Plan and Pricing |
+| Register or identify | Member Center | Merchant customer data |
+| Start a subscription | Supported checkout or integration flow | Subscription configuration |
+| Review billing information | Billing Portal | Billing records |
+| Pay an outstanding bill | Supported payment journey | Payment Management |
+| Receive payment confirmation | Supported notification or interface | Payment status |
+| Update payment method | Supported customer or merchant-assisted flow | Payment Management |
+| Change subscription | Supported customer or merchant-assisted flow | Subscription Lifecycle |
+| Cancel subscription | Supported customer or merchant-assisted flow | Subscription Lifecycle |
+
+**Important interface distinctions**
+
+- Pricing Table supports offer presentation and acquisition.
+- Member Center supports customer/member identity and relationship management.
+- Billing Portal supports the customer-facing billing experience where enabled.
+- Payment Management governs the collection and payment outcome.
+
+Do not assume these interfaces have identical capabilities or that all self-service functions are available.
+
+## 9. Capability status register
+
+Use these labels in internal documents, merchant proposals, and implementation plans.
+
+| Status | Meaning | How to communicate |
+|---|---|---|
+| Available | Confirmed in the current product scope | May be described as available within its documented scope |
+| Conditional | Available subject to merchant, country, channel, or configuration eligibility | State the conditions |
+| Validation required | Evidence is insufficient to confirm availability or behavior | Confirm with Product / Engineering before commitment |
+| Gap | Not currently supported in the validated scope | Do not sell as an existing capability |
+| Future / Strategic | Product direction or proposed capability | Describe as a roadmap or concept, not released functionality |
+
+### Known validation areas
+
+| Capability / area | Internal treatment |
+|---|---|
+| Collection, Plan, and Pricing configuration | Validate current configuration and exact fields |
+| Flat Fee, Per Unit, Tiered, Volume, Stairstep, Open Amount | Validate exact behavior and calculation rules |
+| Pricing Table | Validate available features and channel behavior |
+| PayChat bulk-upload billing connection | Distinguish from a full WhatsApp seller frontend |
+| WhatsApp seller dashboard experience | Do not assume availability |
+| Digital Catalog integration with Subscription / Pricing Table | Validation required |
+| Member Center API readiness | Separate from customer-facing frontend readiness |
+| Billing Portal self-service functions | Validate each action independently |
+| Account Billing calendar behavior | Validate cut-off, date adjustment, and billing rules |
+| Subscription plan-change API | Validation required |
+| Automatic proration | Validation required |
+| Payment-method replacement | Validate method and workflow |
+| Split payment | Validation required |
+| Native usage metering | Gap / strategic direction unless released |
+| Real-time usage aggregation | Gap / strategic direction unless released |
+| Wallet and entitlements | Gap / strategic direction unless released |
+| Multi-product and add-on subscription model | Gap / strategic direction unless released |
+| Subscription hierarchy | Gap / strategic direction unless released |
+| Consolidated invoicing | Gap / strategic direction unless released |
+| Global tax and currency capabilities | Validate actual country and product scope |
+| Revenue recognition | Not to be assumed as a native billing capability |
+| Cross-merchant bill connector / one-VA hub | Strategic concept, not generally available unless separately released |
+
+## 10. Integration model reference
+
+Choose the operating model based on who owns billing logic and who initiates payment.
+
+| Model | Merchant responsibility | FlexiBill / DOKU responsibility | Key validation |
+|---|---|---|---|
+| DOKU-hosted Billing Automation | Supply required merchant and customer configuration/data | Operate supported billing automation and payment workflows | Confirm supported configuration and ownership |
+| H2H API and Webhook | Integrate APIs, manage relevant business logic and consume events | Provide documented API/payment capabilities | Confirm endpoints, events, status handling |
+| Hybrid | Share responsibilities according to solution design | Operate the agreed FlexiBill and payment components | Document ownership at each step |
+| Merchant Hosted Scheduler | Operate merchant-side scheduling according to the documented model | Process supported requests and payment operations | Validate eligibility, country scope, and exact integration |
+
+### Integration decision questions
+
+1. Who creates the billing obligation?
+2. Who calculates the amount?
+3. Who owns the customer and subscription record?
+4. Who determines the billing schedule?
+5. Who initiates payment?
+6. Which system owns the final payment status?
+7. How are status changes communicated?
+8. How are duplicates and retries controlled?
+9. Who reconciles payment outcomes?
+
+**Country note:** Merchant Hosted Scheduler has been documented for Indonesian Business Account. Do not generalize this to Malaysia without validation.
+
+## 11. Country readiness matrix
+
+Complete this matrix for every implementation.
+
+| Validation area | Indonesia | Malaysia | Evidence / owner |
+|---|---|---|---|
+| Merchant eligibility | Confirm | Confirm | |
+| Collection configuration | Confirm | Confirm | |
+| Plan and Pricing options | Confirm | Confirm | |
+| Pricing Table behavior | Confirm | Confirm | |
+| Member Center API | Confirm | Confirm | |
+| Member Center frontend | Confirm | Confirm | |
+| Billing Portal functionality | Confirm | Confirm | |
+| Account Billing | Confirm | Confirm | |
+| Subscription lifecycle | Confirm | Confirm | |
+| Auto-debit methods | Confirm | Confirm | |
+| One-time payment methods | Confirm | Confirm | |
+| Authorization requirements | Confirm | Confirm | |
+| Retry and recovery | Confirm | Confirm | |
+| API and Webhook | Confirm | Confirm | |
+| Tax and currency | Confirm | Confirm | |
+| Reporting and reconciliation | Confirm | Confirm | |
+| Merchant Hosted Scheduler | Confirm documented scope | Do not assume availability | |
+
+A completed row should include evidence, validation date, and accountable owner. "Confirm" is a task, not a claim of availability.
+
+## 12. Merchant implementation workflow
+
+Use this sequence as the default discovery and delivery checklist.
+
+### Stage 1 — Discover
+
+- Understand merchant business model.
+- Identify customer types and billing relationships.
+- Understand products and services.
+- Identify pricing and billing frequency.
+- Determine payment and authorization requirements.
+- Understand customer experience expectations.
+
+### Stage 2 — Design
+
+- Select Collection and customer structure.
+- Define Plans and Pricing.
+- Select the billing model.
+- Define the subscription lifecycle.
+- Select the integration model.
+- Design payment and recovery handling.
+- Define customer-facing interfaces.
+
+### Stage 3 — Validate
+
+- Confirm product capability status.
+- Confirm country and merchant eligibility.
+- Validate API and webhook requirements.
+- Validate payment-method support.
+- Test billing and payment behavior.
+- Confirm operational ownership.
+
+### Stage 4 — Implement
+
+- Configure the merchant solution.
+- Integrate required systems.
+- Configure customer journeys.
+- Set up notifications and reporting.
+- Prepare operational procedures.
+
+### Stage 5 — Test and launch
+
+- Run end-to-end scenarios.
+- Validate financial reconciliation.
+- Obtain merchant sign-off.
+- Confirm support and escalation.
+- Monitor the first billing cycles.
+
+## 13. End-to-end test matrix
+
+| Test area | Test scenario | Acceptance question |
+|---|---|---|
+| Customer | New customer registration | Is the correct customer record created or associated? |
+| Collection | Customer assigned to a Collection | Is the correct relationship established? |
+| Plan | Customer selects the intended service | Is the correct Plan applied? |
+| Pricing | Price and frequency configured | Is the expected amount and schedule produced? |
+| Pricing Table | Customer selects an offer | Does the journey lead to the intended checkout or registration flow? |
+| Member Center | Customer identity is mapped | Is the identity association correct? |
+| Subscription | Subscription is created | Are the intended terms recorded? |
+| Billing | Billing event occurs | Is the correct amount due? |
+| Account Billing | Calendar date is reached | Is the intended account billed? |
+| Payment | Collection is initiated | Is the correct method and amount used? |
+| Failure | Payment attempt fails | Is the failure handled correctly? |
+| Recovery | Eligible failure is retried or resolved | Is recovery recorded correctly? |
+| Portal | Customer reviews billing | Is the displayed information accurate? |
+| Cancellation | Subscription is terminated | Are future billing actions handled correctly? |
+| Reconciliation | Payment result is matched | Does the merchant record agree with the payment outcome? |
+
+## 14. Operational KPI reference
+
+| KPI category | KPI | Business question |
+|---|---|---|
+| Acquisition | Pricing Table conversion | Are offers converting into customers? |
+| Registration | Member registration completion | Are customers successfully identified? |
+| Subscription | New subscriptions | How many new recurring relationships are created? |
+| Retention | Renewal rate | How many eligible subscriptions continue? |
+| Churn | Cancellation / lapse rate | How many relationships stop? |
+| Billing | Bill generation success | Are expected billing obligations created? |
+| Payment | Collection success rate | Are bills successfully collected? |
+| Recovery | Recovery rate | How much failed billing is recovered? |
+| Revenue | Outstanding value | How much remains unpaid? |
+| Operations | Reconciliation match rate | Can payment outcomes be matched reliably? |
+| Customer experience | Portal usage / task completion | Can customers complete the intended actions? |
+
+Define reporting period, population, and denominator before comparing results across merchants or countries.
+
+## 15. Ownership and escalation matrix
+
+| Workstream | Primary owner | Consulted teams |
+|---|---|---|
+| Product capability and scope | FlexiBill Product | Engineering, Sales |
+| Configuration design | Implementation | Product, Merchant |
+| API and integration | Engineering | Implementation, Merchant IT |
+| Payment-method eligibility | Payment / Partnership | Product, Operations |
+| Customer experience | Product / Merchant | Design, Engineering |
+| Billing operations | Merchant Operations | DOKU Operations |
+| Reconciliation | Finance / Operations | Engineering, Merchant |
+| Country readiness | Country / Partnership | Product, Legal, Operations |
+| Product gap and roadmap | FlexiBill Product | Engineering, Commercial |
+
+Assign named owners and escalation contacts in the project implementation plan.
+
+## 16. Go-live readiness scorecard
+
+Use this scorecard before approving a merchant launch.
+
+| Readiness dimension | Required evidence | Status |
+|---|---|---|
+| Business model | Approved merchant use case | Not assessed |
+| Product configuration | Collection, Plan, Pricing validated | Not assessed |
+| Billing model | Account or subscription model approved | Not assessed |
+| Customer identity | Customer mapping tested | Not assessed |
+| Customer interface | Pricing Table, Member Center, Portal validated as applicable | Not assessed |
+| Payment | Payment method and authorization tested | Not assessed |
+| Failure handling | Retry and recovery policy approved | Not assessed |
+| Integration | API, webhook, or hosted workflow tested | Not assessed |
+| Reconciliation | Financial and billing matching tested | Not assessed |
+| Country readiness | ID/MY scope confirmed | Not assessed |
+| Operations | Support and escalation owners assigned | Not assessed |
+
+Suggested approval rule:
+- **Ready:** All critical items have evidence and owner sign-off.
+- **Conditionally ready:** Remaining items have documented mitigation and explicit approval.
+- **Not ready:** Critical payment, billing, customer identity, or reconciliation risks remain unresolved.
+
+## 17. Product gap capture template
+
+When a merchant requirement cannot be met, record it systematically.
+
+| Field | Description |
+|---|---|
+| Gap ID | Unique tracking reference |
+| Merchant / segment | Who needs the capability? |
+| Country | ID, MY, or both |
+| Business problem | What outcome is blocked? |
+| Current workaround | How is it handled today? |
+| Required capability | What must the product do? |
+| Impact | Revenue, customer experience, operations, compliance |
+| Frequency | One merchant or repeated market demand? |
+| Priority | Business urgency and strategic value |
+| Dependencies | Engineering, payment partner, legal, operations |
+| Product decision | Gap, conditional support, or roadmap candidate |
+| Owner | Accountable product owner |
+| Target review | Next review or roadmap decision date |
+
+Do not convert a merchant workaround into a claim that the platform natively supports the requested feature.
+
+## 18. Related playbooks
+
+- [01 — Collection Management](01-collection-management.md)
+- [02 — Plan and Pricing Configuration](02-plan-and-pricing-configuration.md)
+- [03 — Pricing Table](03-pricing-table.md)
+- [04 — Member Center](04-member-center.md)
+- [05 — Billing Portal](05-billing-portal.md)
+- [06 — Account Billing](06-account-billing.md)
+- [07 — Subscription Lifecycle](07-subscription-lifecycle.md)
+- [08 — Payment Management](08-payment-management.md)
+
+## 19. Governance
+
+This matrix is the consolidated internal reference for the Phase 2 Product Configuration Playbooks.
+
+Maintenance rules:
+
+1. Update the relevant detailed playbook when a product capability changes.
+2. Update this matrix when the change affects configuration, integration, country readiness, or implementation decisions.
+3. Record the source and validation date for capability claims.
+4. Keep available capabilities separate from conditional, unvalidated, and future capabilities.
+5. Validate Indonesia and Malaysia independently.
+6. Review the matrix after significant product releases and material implementation findings.
+
+**Document owner:** FlexiBill Product  
+**Review trigger:** Product release, configuration change, API change, payment-method change, country expansion, or material implementation finding.
+
+---
+
+**Phase 2 completion objective:** A practical, connected configuration reference that enables internal DOKU teams to discover, design, validate, implement, and operate FlexiBill merchant solutions with consistent product language and controlled capability claims.
