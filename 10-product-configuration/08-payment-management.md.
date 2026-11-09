@@ -1,1 +1,431 @@
+# Payment Management Playbook
 
+**Phase:** 2 — Product Configuration  
+**Product:** DOKU FlexiBill  
+**Audience:** Product, Engineering, Implementation, Sales, Partnership, Operations  
+**Markets:** Indonesia (ID) and Malaysia (MY)  
+**Status:** Internal working guide — validate exact payment-method availability, authorization, and processing behavior before merchant commitment.
+
+---
+
+## 1. Overview
+
+Payment Management describes how a merchant collects money for a billing obligation and manages the payment relationship throughout its lifecycle.
+
+For FlexiBill, payment management connects:
+
+1. Customer identity and billing relationship.
+2. Payment-method selection and authorization.
+3. Payment instruction and collection attempt.
+4. Payment result and billing-status update.
+5. Failure handling and recovery.
+6. Payment reconciliation and reporting.
+
+**Key principle:** Billing determines what is owed and when. Payment management determines how the amount is collected and how the outcome is handled.
+
+A billing record, payment instruction, payment attempt, and successful transaction are separate concepts. They should not be treated as interchangeable.
+
+## 2. Payment Management architecture
+
+```text
+MERCHANT
+   |
+   v
+CUSTOMER / MEMBER
+   |
+   v
+BILLING OBLIGATION
+   |
+   v
+PAYMENT METHOD
+   |
+   v
+AUTHORIZATION / TOKEN
+   |
+   v
+PAYMENT INSTRUCTION
+   |
+   v
+DOKU PAYMENT PROCESSING
+   |
+   v
+PAYMENT RESULT
+   |
+   +----------------------+
+   |                      |
+   v                      v
+SUCCESS                 FAILURE
+   |                      |
+   v                      v
+UPDATE BILLING       FAILURE CLASSIFICATION
+STATUS                    |
+   |                      v
+   |                RECOVERY / CUSTOMER ACTION
+   |                      |
+   +-----------+----------+
+               |
+               v
+       RECONCILIATION
+               |
+               v
+        MERCHANT REPORTING
+```
+
+This is a logical view. The actual processing route, authorization mechanism, API sequence, and status events depend on the selected payment method and integration model.
+
+## 3. Payment-method categories
+
+Payment-method availability must be confirmed by country, merchant eligibility, and product configuration.
+
+| Category | Typical role | Important validation |
+|---|---|---|
+| Card | Recurring or customer-initiated payment | Tokenization, authorization, issuer behavior |
+| Bank-based auto-debit | Collection from an authorized bank account | Mandate, bank support, consent |
+| Virtual Account | Customer pays a bill through a bank transfer rail | VA lifecycle, expiry, amount rules |
+| QR payment | Customer scans and pays | Static/dynamic QR, expiry, payment confirmation |
+| E-wallet | Customer pays using an eligible wallet | Recurring eligibility and authorization |
+| Counter or over-the-counter payment | Customer pays through a supported physical channel | Reference number, settlement and reconciliation |
+| Other local methods | Market-specific payment channels | Merchant and country eligibility |
+
+Do not assume every method supports unattended recurring collection. A payment method that supports one-time checkout may not support auto-debit.
+
+## 4. One-time payment vs recurring auto-debit
+
+| Dimension | One-time payment | Recurring auto-debit |
+|---|---|---|
+| Customer action | Usually initiates each payment | Authorizes an ongoing collection arrangement |
+| Payment trigger | Customer payment action | Scheduled billing or collection event |
+| Authorization | Per transaction or method-specific | May require prior mandate or token authorization |
+| Collection | Customer-initiated | Merchant/platform-initiated according to consent and rules |
+| Failure handling | Customer retries or chooses another method | May include configured retries and recovery |
+| Customer communication | Payment instructions and confirmation | Authorization, billing notification, failure and recovery messages |
+
+A recurring subscription does not automatically imply that every payment method can be auto-debited.
+
+## 5. Payment-method setup and customer authorization
+
+Before collecting recurring payments, establish:
+
+- Customer identity.
+- Payment-method eligibility.
+- Customer consent and authorization.
+- Token or mandate reference, where applicable.
+- Merchant and customer reference mapping.
+- Authorization status.
+- Revocation and update process.
+- Evidence and audit requirements.
+
+### Conceptual customer journey
+
+1. Customer selects a subscription or billing arrangement.
+2. Customer selects an eligible payment method.
+3. Customer completes the required authorization flow.
+4. The payment method or authorization reference is associated with the customer according to the supported design.
+5. The merchant or FlexiBill initiates future collection according to the configured billing process.
+6. Customer receives relevant payment and billing notifications.
+
+The precise authorization and tokenization flow is payment-method-specific. Do not store or expose sensitive payment credentials in merchant-facing records unless the approved integration explicitly requires it.
+
+## 6. Auto-debit collection
+
+Auto-debit is a core value proposition for recurring billing because it reduces the need for customers to initiate every payment manually.
+
+### Business workflow
+
+1. Subscription or billing obligation becomes due.
+2. Billing amount is determined.
+3. An eligible and authorized payment method is selected.
+4. Payment instruction is created.
+5. DOKU processes the collection.
+6. Result is returned through the supported mechanism.
+7. Billing and payment status are updated.
+8. Failed transactions enter the applicable recovery process.
+
+### Auto-debit configuration checklist
+
+| Configuration area | Questions |
+|---|---|
+| Eligibility | Is this merchant and payment method eligible? |
+| Authorization | Has the customer completed the required consent? |
+| Trigger | What event initiates collection? |
+| Amount | Which system provides the final amount? |
+| Timing | What is the collection date and time? |
+| Frequency | How often can collection be attempted? |
+| Retry | Which failures are eligible for retry? |
+| Revocation | How is authorization cancelled? |
+| Notifications | What does the customer receive? |
+| Reconciliation | How is the payment matched to its billing obligation? |
+
+## 7. Payment instruction and status handling
+
+A payment instruction represents a request to process a payment. It is not proof of successful collection.
+
+For implementation, define the mapping between payment-processing outcomes and merchant billing outcomes.
+
+| Payment outcome category | Operational interpretation | Required action |
+|---|---|---|
+| Successful | Collection completed successfully according to the confirmed status | Update the corresponding billing record |
+| Pending | Final result not yet confirmed | Await supported status update |
+| Failed | Collection unsuccessful | Classify failure and apply recovery policy |
+| Expired | Payment instruction or payment window expired | Determine whether a new instruction is required |
+| Reversed/refunded | Previously successful amount was reversed or refunded | Reconcile financial and billing records |
+| Unknown | Status cannot be confidently determined | Investigate; avoid duplicate collection |
+
+These are business categories, not a definitive list of FlexiBill API status values. Use the exact status vocabulary from the current API and payment-channel documentation.
+
+## 8. Payment failure management
+
+Failures should be classified before deciding what to do next.
+
+| Failure category | Example | Potential response |
+|---|---|---|
+| Insufficient funds | Customer balance is insufficient | Notify customer and retry if permitted |
+| Expired payment credential | Card expired | Request an updated payment method |
+| Authorization revoked | Customer withdrew consent | Stop collection and follow the applicable process |
+| Issuer unavailable | Temporary bank or issuer issue | Retry only when eligible |
+| Invalid payment details | Invalid or unsupported details | Correct the payment information |
+| Technical failure | Integration or processing issue | Investigate before retrying |
+| Customer-initiated cancellation | Customer stops the arrangement | Update authorization and billing handling |
+
+Actual retry eligibility depends on the payment method, issuer, and applicable rules.
+
+## 9. Retry and recovery policy
+
+A retry is a new collection attempt following a previous unsuccessful attempt. Recovery is the broader process of resolving an unpaid billing obligation.
+
+Define the policy before go-live:
+
+- Which failure categories can be retried?
+- How many retries are allowed?
+- What interval applies?
+- Is there a maximum recovery period?
+- Does a retry require customer action?
+- When should the customer be notified?
+- When should the merchant intervene?
+- What happens when recovery fails?
+
+### Illustrative recovery schedule
+
+| Timing | Example action |
+|---|---|
+| Initial due date | First collection attempt |
+| After first failure | Classify failure and notify if required |
+| Retry window | Retry eligible failures according to policy |
+| Recovery window | Request customer action where necessary |
+| Final decision | Apply merchant-approved overdue, suspension, or cancellation policy |
+
+This schedule is illustrative, not a default FlexiBill retry configuration.
+
+**Important:** Do not claim smart retry, issuer-aware retry optimization, or guaranteed recovery unless these are explicitly available and validated.
+
+## 10. Payment-method update and replacement
+
+Customers may need to update a payment method because of:
+
+- Card expiry.
+- Lost or replaced card.
+- Bank-account changes.
+- Revoked authorization.
+- Customer preference.
+- Repeated payment failure.
+
+A method-update workflow should confirm:
+
+1. Customer identity.
+2. Existing payment-method relationship.
+3. New method eligibility.
+4. Required authorization.
+5. Secure association of the new method.
+6. Status of the previous method.
+7. Treatment of outstanding billing.
+8. Confirmation to the customer.
+
+Do not assume that adding a new payment method automatically replaces the old one or changes the payment method for every active subscription.
+
+## 11. Multiple payment methods and split payment
+
+A merchant may request multiple funding sources for a single customer or billing obligation.
+
+Examples:
+- Primary and backup payment method.
+- Card plus bank-based payment.
+- One customer paying multiple bills.
+- Split payment across funding sources.
+- Partial payment followed by settlement of the balance.
+
+These scenarios require separate validation.
+
+| Capability | Internal status |
+|---|---|
+| Multiple customer payment methods | Validate current product support |
+| Primary payment method selection | Validate current workflow |
+| Backup payment method | Validation required |
+| Split payment for one bill | Validation required |
+| Partial payment | Validation required |
+| Multiple bills paid in one customer session | Validate supported payment flow |
+| Automatic fallback between funding sources | Do not assume availability |
+
+A future cross-merchant bill-payment hub or single-VA-to-multiple-billers model is a strategic concept, not a generally available FlexiBill capability unless separately released.
+
+## 12. Payment management through customer interfaces
+
+| Customer action | Potential interface | Validation |
+|---|---|---|
+| Select payment method | Checkout or supported registration flow | Confirm enabled methods |
+| Authorize auto-debit | Payment-method authorization journey | Confirm method-specific flow |
+| View payment status | Billing Portal or supported notification | Confirm available status information |
+| Update payment method | Billing Portal or merchant-assisted flow | Confirm functionality |
+| Pay an outstanding bill | Supported payment link or payment channel | Confirm available flow |
+| Review payment history | Billing Portal or merchant interface | Confirm history availability |
+| Revoke authorization | Supported customer or merchant process | Confirm operational handling |
+
+Member Center identifies or manages the customer relationship; Billing Portal provides the customer-facing billing experience where enabled. Neither should be assumed to provide every payment-management function.
+
+## 13. Reconciliation and exception management
+
+Payment reconciliation ensures that payment outcomes are correctly associated with billing obligations and merchant records.
+
+### Reconciliation dimensions
+
+- Merchant reference.
+- Customer/member reference.
+- Subscription or account reference.
+- Billing or invoice reference.
+- Payment instruction reference.
+- Payment transaction reference.
+- Amount and currency.
+- Payment status.
+- Transaction timestamp.
+- Settlement information, where applicable.
+- Refund or reversal status.
+
+### Exception categories
+
+| Exception | Risk | Suggested operational response |
+|---|---|---|
+| Successful payment not reflected in billing | Customer appears unpaid | Investigate status propagation and mapping |
+| Duplicate payment | Customer overcharged | Investigate duplicate attempts and refund process |
+| Unmatched transaction | Incorrect reporting | Review reference mapping |
+| Pending status not resolved | Uncertain collection result | Follow documented inquiry/status process |
+| Refund not reflected | Incorrect account balance | Reconcile refund and billing records |
+| Duplicate webhook/event | Repeated status processing | Validate idempotency handling |
+
+Never initiate another collection solely because a status update is delayed. First establish the authoritative payment outcome.
+
+## 14. Merchant operations dashboard
+
+Recommended views:
+
+| View | Key information |
+|---|---|
+| Payment overview | Total attempts, successful, failed, pending |
+| Collection value | Attempted and successfully collected value |
+| Failure analysis | Failure category, channel, bank or issuer where available |
+| Recovery monitoring | Recovered count, value, and time |
+| Payment-method performance | Success rate by eligible payment method |
+| Authorization monitoring | Active, revoked, or invalid authorizations where supported |
+| Reconciliation | Matched, unmatched, and exceptional transactions |
+| Outstanding billing | Amounts still unpaid |
+
+These are recommended operational views. Confirm what is available natively and what requires merchant-side reporting.
+
+## 15. Payment KPIs
+
+| KPI | Definition |
+|---|---|
+| Payment attempt count | Total payment attempts in the period |
+| Payment success rate | Successful attempts divided by total eligible attempts |
+| Payment failure rate | Failed attempts divided by total eligible attempts |
+| Collection value | Value successfully collected |
+| Average ticket size | Successful payment value divided by successful payment count |
+| First-attempt success rate | First attempts successful divided by first attempts |
+| Retry success rate | Successful retries divided by eligible retry attempts |
+| Recovery rate | Failed billing obligations subsequently recovered divided by eligible failed obligations |
+| Recovery time | Time from initial failure to successful recovery |
+| Outstanding value | Total unpaid amount at reporting cut-off |
+| Reconciliation match rate | Transactions matched to billing records divided by transactions requiring reconciliation |
+| Duplicate payment rate | Duplicate successful payments divided by successful payments |
+
+For analysis, separate transaction-level success from billing-level recovery. Multiple payment attempts may relate to one billing obligation.
+
+## 16. Testing and acceptance scenarios
+
+| Scenario | Expected result |
+|---|---|
+| Valid authorization | Payment method becomes eligible according to the confirmed flow |
+| Revoked authorization | Future collection follows the applicable stop rule |
+| Successful auto-debit | Correct billing obligation is marked paid |
+| Failed auto-debit | Failure is recorded and recovery policy applied |
+| Pending payment | No premature success or duplicate collection |
+| Expired card | Customer update process is initiated |
+| Payment-method replacement | Correct method is associated with the intended customer |
+| Duplicate payment request | No unintended duplicate charge |
+| Duplicate status event | No repeated business action |
+| Delayed status update | Payment outcome is safely resolved |
+| Refund | Billing and financial records are reconciled |
+| Reversal | Correct operational status is reflected |
+| Partial payment | Remaining balance is handled according to the confirmed capability |
+| Multiple active subscriptions | Correct billing-to-payment mapping is maintained |
+
+## 17. Country validation: Indonesia and Malaysia
+
+Payment methods, authorization rules, and merchant eligibility can differ by market.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Card recurring | Confirm supported card and merchant setup | Confirm supported card and merchant setup |
+| Bank-based auto-debit | Confirm bank/channel eligibility | Confirm bank/channel eligibility |
+| VA | Confirm applicable VA flow | Confirm applicable VA flow |
+| QR payment | Confirm supported QR flow and payment behavior | Confirm supported QR flow and payment behavior |
+| E-wallet | Confirm supported channels and recurring eligibility | Confirm supported channels and recurring eligibility |
+| Customer authorization | Validate method-specific requirements | Validate method-specific requirements |
+| Retry | Confirm channel and issuer rules | Confirm channel and issuer rules |
+| Refund/reversal | Confirm operational process | Confirm operational process |
+| API/webhook | Validate current documentation | Validate current documentation |
+
+Do not infer recurring eligibility from the availability of a payment method for one-time checkout.
+
+## 18. Go-live checklist
+
+- [ ] Payment-method scope approved.
+- [ ] Merchant eligibility confirmed.
+- [ ] Customer authorization journey tested.
+- [ ] Token or mandate handling validated.
+- [ ] Billing-to-payment mapping confirmed.
+- [ ] Auto-debit trigger validated.
+- [ ] Payment statuses mapped.
+- [ ] Pending status handling tested.
+- [ ] Failure classification defined.
+- [ ] Retry and recovery policy approved.
+- [ ] Payment-method update process tested.
+- [ ] Duplicate prevention and idempotency validated.
+- [ ] Refund and reversal handling documented.
+- [ ] Reconciliation process signed off.
+- [ ] Customer notifications approved.
+- [ ] Indonesia and Malaysia independently validated.
+
+## 19. Related playbooks
+
+- [Collection Management](01-collection-management.md)
+- [Plan and Pricing Configuration](02-plan-and-pricing-configuration.md)
+- [Pricing Table](03-pricing-table.md)
+- [Member Center](04-member-center.md)
+- [Billing Portal](05-billing-portal.md)
+- [Account Billing](06-account-billing.md)
+- [Subscription Lifecycle](07-subscription-lifecycle.md)
+- [Configuration Reference Matrix](09-configuration-reference-matrix.md)
+
+## 20. Governance and source validation
+
+This playbook is an internal payment-management guide. It does not establish that every payment method, auto-debit flow, retry rule, or customer self-service function is available in every country or merchant configuration.
+
+Before external commitment:
+1. Validate the latest payment-method documentation.
+2. Confirm merchant eligibility and country scope.
+3. Confirm authorization and token/mandate requirements.
+4. Validate API, webhook, and payment-status behavior.
+5. Test failure, retry, recovery, refund, and reconciliation scenarios.
+6. Record unsupported capabilities as gaps or roadmap candidates.
+
+**Owner:** FlexiBill Product  
+**Review trigger:** Payment-channel release, API change, authorization change, country expansion, or material operational finding.
