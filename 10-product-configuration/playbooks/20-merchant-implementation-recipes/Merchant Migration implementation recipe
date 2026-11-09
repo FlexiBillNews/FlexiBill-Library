@@ -1,1 +1,688 @@
+# Merchant Migration — Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-008  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Product, Sales, Partnership, Implementation, Engineering, Operations, Finance, Customer Support  
+**Status:** Reference migration framework — validate merchant-specific data, payment-method eligibility, API readiness, token portability, and country requirements before execution.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+An existing merchant wants to migrate its recurring billing or subscription operations to FlexiBill.
+
+Typical migration sources include:
+
+- Legacy recurring-payment platforms.
+- Existing payment gateways.
+- Merchant-owned billing schedulers.
+- Existing subscription-management systems.
+- Third-party recurring billing providers.
+- Manual billing processes.
+- Existing DOKU recurring-payment implementations.
+
+The objective is not simply to move merchant records.
+
+A successful migration must preserve the commercial relationship, billing continuity, payment authorization requirements, customer experience, and financial reconciliation.
+
+### Migration objectives
+
+| Objective | Desired outcome |
+|---|---|
+| Merchant continuity | Existing business operations continue |
+| Subscriber continuity | Customer relationships remain traceable |
+| Billing continuity | Correct future billing obligations |
+| Payment continuity | Eligible payment methods remain usable |
+| Data integrity | Records are mapped and validated |
+| Financial accuracy | Historical and new transactions reconcile |
+| Operational readiness | Support and exception processes are prepared |
+| Product adoption | Merchant uses the agreed FlexiBill operating model |
+
+### Core migration principle
+
+**Migrate the commercial and billing relationship first; migrate payment credentials only through an explicitly supported and authorized process.**
+
+Never assume that stored payment tokens, card credentials, mandates, or payment authorizations are portable between providers.
+
+A successful data import does not automatically mean that a customer is ready for auto-debit.
+
+## 2. Migration source profiles
+
+| Migration source | Typical characteristics | Main challenge |
+|---|---|---|
+| Legacy subscription platform | Subscribers, plans, schedules | Data and lifecycle mapping |
+| Existing payment gateway | Tokens and recurring payment references | Credential portability |
+| Merchant-owned scheduler | Merchant-controlled billing dates | Schedule and event integration |
+| Manual billing | Customer lists and periodic invoices | Data quality and onboarding |
+| Existing DOKU implementation | Existing merchant and payment setup | Product configuration and migration mapping |
+| Third-party provider | Provider-specific data structures | API, data export, and contractual constraints |
+
+## 3. Migration scope
+
+Define the migration boundary before implementation.
+
+### Data migration scope
+
+| Data category | Examples | Migration consideration |
+|---|---|---|
+| Merchant configuration | Merchant ID, payment setup | Confirm target configuration |
+| Customer records | Name, email, customer reference | Data minimization and validation |
+| Subscriber records | Subscription ID, status | Lifecycle mapping |
+| Collection | Product or service grouping | Recreate or map configuration |
+| Plan and pricing | Amount, interval, pricing model | Validate target support |
+| Billing schedule | Next billing date, interval | Reconcile schedule |
+| Billing history | Past obligations | Historical reporting and retention |
+| Payment history | Transactions and results | Financial reconciliation |
+| Payment credentials | Tokens, mandates, authorization references | Explicit portability validation |
+| Failure history | Failed attempts and recovery | Recovery-state mapping |
+| Discounts | Coupons and promotional rules | Validate target behavior |
+| Customer preferences | Notification preferences | Consent and communication controls |
+
+### Scope categories
+
+Classify every migration object:
+
+- **Migrate:** Move into the target system.
+- **Recreate:** Configure again in FlexiBill.
+- **Reference only:** Retain in the merchant's historical system.
+- **Integrate:** Keep in the merchant system and synchronize.
+- **Exclude:** Do not migrate due to irrelevance, legal constraints, or unsupported data.
+
+Do not migrate unnecessary personal or payment data.
+
+## 4. Migration architecture
+
+### Conceptual architecture
+
+```text
+       EXISTING MERCHANT SYSTEM
+                 |
+                 v
+          SOURCE DATA EXPORT
+                 |
+                 v
+          DATA VALIDATION
+                 |
+                 v
+          FIELD MAPPING
+                 |
+                 v
+       MIGRATION STAGING LAYER
+                 |
+                 v
+       FLEXIBILL CONFIGURATION
+                 |
+                 v
+       CUSTOMER / SUBSCRIBER SETUP
+                 |
+                 v
+       BILLING SCHEDULE VALIDATION
+                 |
+                 v
+        PAYMENT READINESS CHECK
+                 |
+                 v
+           MIGRATION CUTOVER
+                 |
+                 v
+        FLEXIBILL OPERATIONS
+                 |
+                 v
+       RECONCILIATION / MONITORING
+```
+
+### Recommended migration ownership
+
+| Responsibility | Primary owner |
+|---|---|
+| Source data extraction | Merchant / existing provider |
+| Source data accuracy | Merchant |
+| Data mapping | Merchant + DOKU Implementation |
+| FlexiBill configuration | DOKU Implementation / Product |
+| Integration | Merchant Engineering + DOKU Engineering |
+| Payment credential portability | Payment provider and relevant parties |
+| Customer communication | Merchant |
+| Cutover approval | Merchant + DOKU |
+| Financial reconciliation | Merchant Finance + DOKU Operations |
+| Post-migration support | Agreed joint operating team |
+
+## 5. Migration readiness assessment
+
+Before starting, assess five dimensions.
+
+### A. Business readiness
+
+- What billing model is currently used?
+- How many active subscribers exist?
+- How many subscriptions are suspended or overdue?
+- What is the billing frequency?
+- What is the monthly transaction volume?
+- What is the merchant's migration deadline?
+- Are there contractual commitments to the existing provider?
+
+### B. Data readiness
+
+- Are subscriber IDs unique?
+- Are customer records complete?
+- Are billing amounts accurate?
+- Are next billing dates available?
+- Can the merchant export historical records?
+- Are failed and overdue obligations identifiable?
+- Are duplicates and invalid records understood?
+
+### C. Payment readiness
+
+- Which payment methods are used?
+- Are payment tokens portable?
+- Is customer reauthorization required?
+- Are mandates or recurring permissions transferable?
+- Are there payment-method restrictions?
+- Has the target payment flow been tested?
+
+### D. Technical readiness
+
+- Are target APIs available?
+- Is Member Center API readiness confirmed?
+- Is the required customer-facing frontend ready?
+- Can the merchant create the required billing obligations?
+- Are webhook events and status mappings understood?
+- Can duplicate events be handled safely?
+
+### E. Operational readiness
+
+- Is customer communication approved?
+- Are exception owners assigned?
+- Is rollback or recovery defined?
+- Is reconciliation ready?
+- Are support teams trained?
+- Is a migration monitoring dashboard available?
+
+## 6. Source-to-target data mapping
+
+### Recommended mapping matrix
+
+| Source object | FlexiBill / target object | Mapping action |
+|---|---|---|
+| Merchant product | Collection | Recreate or map |
+| Subscription package | Plan | Recreate or map |
+| Subscription price | Plan pricing | Validate pricing model |
+| Subscriber | Member / customer reference | Map or create |
+| Subscription | Subscription relationship | Recreate or integrate |
+| Billing cycle | Recurring configuration | Validate interval |
+| Next billing date | Billing schedule | Reconcile and configure |
+| Outstanding invoice | Billing obligation | Validate migration method |
+| Payment token | Payment credential reference | Separate portability assessment |
+| Transaction history | Historical payment reference | Retain or import where supported |
+| Coupon | Coupon configuration | Recreate and validate |
+| Subscription status | Lifecycle status | Map explicitly |
+
+### Required migration fields
+
+| Field | Description | Required control |
+|---|---|---|
+| Source Customer ID | Original customer identifier | Preserve mapping |
+| Source Subscription ID | Original subscription identifier | Preserve mapping |
+| Target Member ID | Target member reference, if applicable | Validate uniqueness |
+| Target Subscription ID | New subscription reference | Record mapping |
+| Collection ID | Target Collection | Validate |
+| Plan ID | Target Plan | Validate |
+| Billing Amount | Expected recurring amount | Compare |
+| Billing Interval | Frequency | Compare |
+| Next Billing Date | Next scheduled obligation | Reconcile |
+| Subscription Status | Active, paused, cancelled, etc. | Map to supported state |
+| Payment Method Reference | Eligible payment reference | Validate portability |
+| Migration Batch ID | Migration grouping | Track |
+| Migration Status | Processing result | Monitor |
+
+Do not assume all fields can be stored natively in FlexiBill. Retain source-to-target mappings in the migration staging layer or merchant system when necessary.
+
+## 7. Subscription lifecycle mapping
+
+Source platforms often use different status definitions.
+
+Create an explicit mapping before importing subscribers.
+
+| Source status | Target treatment | Required validation |
+|---|---|---|
+| Active | Recreate as active where supported | Payment readiness |
+| Trial | Recreate or manage externally | Trial behavior |
+| Past due | Reconcile outstanding obligation | Recovery policy |
+| Suspended | Recreate supported state or manage externally | Lifecycle capability |
+| Paused | Validate supported pause behavior | Do not assume native support |
+| Cancelled | Historical reference or cancelled state | Prevent unintended rebilling |
+| Expired | Historical reference or expired state | Confirm lifecycle behavior |
+| Pending activation | Complete onboarding first | Payment authorization |
+| Incomplete | Resolve before migration | Customer action |
+
+### Important controls
+
+- Do not reactivate cancelled subscribers unintentionally.
+- Do not collect payment for an already settled obligation.
+- Do not restart a billing cycle without checking the original schedule.
+- Do not assume that a source pause or suspension maps directly to a FlexiBill lifecycle action.
+- Do not create duplicate subscriptions for the same commercial relationship.
+
+## 8. Payment credential and authorization migration
+
+This is one of the most critical migration workstreams.
+
+### Payment credential categories
+
+| Category | Migration treatment |
+|---|---|
+| Raw card number | Never include in ordinary migration files |
+| Tokenized card reference | Validate provider and token portability |
+| Network token | Validate target support and authorization |
+| Bank mandate | Validate transferability and legal requirements |
+| Recurring authorization | Validate merchant, channel, and consent scope |
+| Customer payment method ID | Do not assume it works in the target platform |
+| Expired payment credential | Require an approved update or reauthorization journey |
+
+### Required decision
+
+```text
+EXISTING PAYMENT CREDENTIAL
+           |
+           v
+   PORTABILITY CONFIRMED?
+        /       \
+       /         \
+     YES          NO
+      |            |
+      v            v
+PROVIDER-APPROVED  CUSTOMER
+TRANSFER PROCESS   REAUTHORIZATION
+      |            |
+      v            v
+TARGET VALIDATION  NEW PAYMENT SETUP
+       \           /
+        \         /
+         v       v
+       PAYMENT READINESS
+              |
+              v
+       CONTROLLED ACTIVATION
+```
+
+The transfer process must be approved by the relevant payment provider and meet security, consent, and regulatory requirements.
+
+If portability is unavailable, design a customer reauthorization journey.
+
+### Customer reauthorization journey
+
+1. Merchant identifies affected subscribers.
+2. Merchant communicates the migration and required customer action.
+3. Customer accesses an approved payment setup journey.
+4. Customer provides or confirms the required payment authorization.
+5. Payment method is validated.
+6. Merchant confirms migration readiness.
+7. Future billing is activated only after required checks pass.
+
+Do not describe a subscriber as fully migrated while payment authorization remains incomplete.
+
+## 9. Migration strategy options
+
+### Strategy A — Big-bang migration
+
+All eligible subscribers move within one agreed cutover window.
+
+Suitable when:
+
+- Merchant has a manageable subscriber population.
+- Data quality is high.
+- Payment readiness is confirmed.
+- Cutover dependencies are controlled.
+
+Risk: A single migration issue can affect a large customer population.
+
+### Strategy B — Phased migration
+
+Move subscribers in controlled batches.
+
+Possible batches:
+
+- By product.
+- By customer segment.
+- By payment method.
+- By billing date.
+- By country.
+- By merchant business unit.
+
+Suitable for larger merchants and complex operating environments.
+
+### Strategy C — Cohort migration
+
+Move subscribers according to their next billing date.
+
+Example:
+
+| Cohort | Billing window | Action |
+|---|---|---|
+| Cohort A | Next 7 days | Early controlled migration |
+| Cohort B | Days 8–14 | Second migration wave |
+| Cohort C | Days 15–30 | Third migration wave |
+| Cohort D | More than 30 days | Later migration wave |
+
+The cohort approach reduces the risk of disrupting a large number of simultaneous billing events.
+
+Actual cutover windows must account for payment authorization, operational capacity, and source-system behavior.
+
+## 10. Migration execution workflow
+
+### Stage 1 — Discovery
+
+- Identify merchant and source system.
+- Confirm commercial model.
+- Establish subscriber population.
+- Review contracts and provider constraints.
+- Confirm target FlexiBill model.
+- Identify country-specific requirements.
+
+**Exit gate:** Migration scope and ownership approved.
+
+### Stage 2 — Data preparation
+
+- Export source records.
+- Validate mandatory fields.
+- Identify duplicates.
+- Reconcile active subscribers.
+- Identify outstanding obligations.
+- Build source-to-target mapping.
+- Classify excluded records.
+
+**Exit gate:** Data quality accepted.
+
+### Stage 3 — Configuration
+
+- Create or validate Collection.
+- Configure Plans and pricing.
+- Configure billing intervals.
+- Confirm duration and end conditions.
+- Confirm overdue and grace behavior.
+- Validate Pricing Table or onboarding flow where applicable.
+- Validate Member Center requirements.
+- Confirm Billing Portal requirements.
+
+**Exit gate:** Target configuration approved.
+
+### Stage 4 — Integration and payment readiness
+
+- Validate APIs.
+- Test webhook processing.
+- Confirm payment-method eligibility.
+- Complete credential portability or reauthorization.
+- Test billing creation.
+- Test payment collection.
+- Test failure and recovery behavior.
+
+**Exit gate:** Technical and payment readiness approved.
+
+### Stage 5 — Migration rehearsal
+
+- Run a sample batch.
+- Compare source and target records.
+- Validate subscription states.
+- Compare next billing dates.
+- Confirm amounts.
+- Validate payment authorization.
+- Reconcile test transactions.
+
+**Exit gate:** Rehearsal signed off.
+
+### Stage 6 — Cutover
+
+- Freeze or control source-system changes.
+- Capture final migration snapshot.
+- Process approved migration batch.
+- Validate target records.
+- Disable source billing for migrated records according to the cutover plan.
+- Confirm no overlapping billing.
+- Activate target billing only when all readiness conditions are met.
+
+**Exit gate:** Merchant and DOKU approve production activation.
+
+### Stage 7 — Hypercare
+
+- Monitor billing events.
+- Monitor payment outcomes.
+- Monitor duplicate collection.
+- Reconcile source and target populations.
+- Handle customer reauthorization.
+- Resolve exceptions.
+- Report daily migration performance.
+
+**Exit gate:** Stable operation and formal handover.
+
+## 11. Migration controls and reconciliation
+
+### Critical reconciliation dimensions
+
+| Dimension | Comparison |
+|---|---|
+| Subscriber count | Source vs target |
+| Active subscription count | Source vs target |
+| Subscription status | Source vs target |
+| Billing amount | Source vs target |
+| Billing interval | Source vs target |
+| Next billing date | Source vs target |
+| Payment readiness | Eligible vs incomplete |
+| Outstanding obligations | Source vs target treatment |
+| Payment history | Historical record consistency |
+| First post-migration collection | Expected vs actual |
+
+### Recommended migration dashboard
+
+| Metric | Purpose |
+|---|---|
+| Total in-scope subscribers | Migration population |
+| Records extracted | Source completeness |
+| Records validated | Data quality |
+| Records migrated | Execution progress |
+| Records rejected | Exception tracking |
+| Payment-ready subscribers | Collection readiness |
+| Reauthorization pending | Customer action tracking |
+| First billing successful | Continuity measurement |
+| Duplicate billing incidents | Critical risk |
+| Unmatched transactions | Financial control |
+
+### Essential controls
+
+- Every migrated record must have a source identifier.
+- Every target record must have a target identifier.
+- Every migration batch must be traceable.
+- Source billing must not overlap with target billing.
+- Pending payments must not trigger unintended duplicate collection.
+- Historical transactions must not be mistaken for new billing obligations.
+- Failed records must enter an exception process.
+
+## 12. Migration failure scenarios
+
+| Scenario | Risk | Recommended action |
+|---|---|---|
+| Missing customer ID | Incorrect mapping | Quarantine record |
+| Duplicate subscription | Double collection | Deduplicate before activation |
+| Incorrect billing amount | Customer over/undercharge | Compare against source |
+| Wrong next billing date | Early or late collection | Reconcile schedule |
+| Token not portable | Auto-debit unavailable | Reauthorization |
+| Member creation failure | Subscriber cannot be mapped | Retry or exception queue |
+| Plan mismatch | Incorrect billing configuration | Correct target configuration |
+| Webhook failure | Inconsistent payment status | Retry and reconciliation |
+| Source billing remains active | Double collection | Controlled source shutdown |
+| Target billing activated too early | Unauthorized collection | Activation gate |
+| Customer cancellation during migration | Unwanted future charge | Final status recheck |
+| Pending source payment | Duplicate collection | Resolve payment state first |
+
+## 13. Merchant and customer communication
+
+### Merchant communication
+
+The merchant should receive:
+
+- Migration scope and timeline.
+- Data requirements.
+- Payment authorization requirements.
+- Test and rehearsal results.
+- Cutover plan.
+- Exception report.
+- Reconciliation report.
+- Hypercare and support process.
+
+### Customer communication
+
+Where customer action is required, explain:
+
+- Why the billing experience is changing.
+- Whether any action is required.
+- Whether payment details need to be reauthorized.
+- When the next payment is expected.
+- Which merchant relationship is affected.
+- Where to get support.
+
+Customer communications must be approved by the merchant and comply with applicable consent and data-protection requirements.
+
+## 14. Migration go-live checklist
+
+### Commercial and governance
+- [ ] Merchant migration scope approved.
+- [ ] Source-system responsibilities documented.
+- [ ] Contractual and provider restrictions reviewed.
+- [ ] Target operating model approved.
+- [ ] ID and MY scope separately validated.
+
+### Data
+- [ ] Subscriber population reconciled.
+- [ ] Source-to-target mapping approved.
+- [ ] Duplicate records resolved.
+- [ ] Subscription status mapping approved.
+- [ ] Billing amounts reconciled.
+- [ ] Next billing dates reconciled.
+- [ ] Outstanding obligations classified.
+- [ ] Historical data treatment approved.
+
+### Payment
+- [ ] Payment-method eligibility confirmed.
+- [ ] Token portability explicitly validated.
+- [ ] Reauthorization journey ready where required.
+- [ ] Consent and mandate requirements reviewed.
+- [ ] First collection tested.
+- [ ] Duplicate payment controls tested.
+- [ ] Failure and recovery tested.
+
+### Technical
+- [ ] Collection and Plan configured.
+- [ ] Member Center scope validated.
+- [ ] API and webhook integration tested.
+- [ ] Migration batch processing tested.
+- [ ] Idempotency and error handling tested.
+- [ ] Reporting and reconciliation ready.
+
+### Cutover and operations
+- [ ] Source billing shutdown plan approved.
+- [ ] Target activation criteria approved.
+- [ ] Migration rehearsal signed off.
+- [ ] Rollback and recovery plan documented.
+- [ ] Customer communications approved.
+- [ ] Hypercare team assigned.
+- [ ] Daily monitoring and reporting ready.
+
+## 15. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Migration completeness | Migrated / in-scope subscribers |
+| Data integrity | Successful validation rate |
+| Payment readiness | Payment-ready subscriber rate |
+| Customer continuity | Subscriber retention after migration |
+| Billing continuity | First-cycle billing success |
+| Financial control | Duplicate billing incidents |
+| Reconciliation | Source-to-target match rate |
+| Operational quality | Migration exception rate |
+| Customer experience | Reauthorization completion rate |
+| Stability | Post-migration incident rate |
+
+### Suggested migration acceptance criteria
+
+Set thresholds with the merchant before execution.
+
+Examples:
+
+- All in-scope records have traceable source identifiers.
+- All activated subscriptions have approved target configuration.
+- No unapproved duplicate billing.
+- All payment credentials are either explicitly validated for portability or reauthorized.
+- Billing amounts and next billing dates are reconciled.
+- Financial exceptions are documented and assigned.
+- Merchant signs off on cutover and hypercare completion.
+
+Do not use arbitrary success percentages as universal FlexiBill product guarantees.
+
+## 16. Indonesia and Malaysia considerations
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Validate merchant eligibility | Validate merchant eligibility |
+| Existing payment provider | Confirm source restrictions | Confirm source restrictions |
+| Token portability | Confirm explicitly | Confirm explicitly |
+| Recurring authorization | Validate local requirements | Validate local requirements |
+| Member Center | Confirm API and frontend scope | Confirm API and frontend scope |
+| Merchant Hosted Scheduler | Validate documented eligibility | Do not assume parity |
+| API / H2H | Confirm available integration | Confirm available integration |
+| Billing Portal | Confirm supported functions | Confirm supported functions |
+| Payment methods | Validate target eligibility | Validate target eligibility |
+| Data protection | Review local obligations | Review local obligations |
+| Financial reconciliation | Confirm reporting and settlement | Confirm reporting and settlement |
+
+A completed migration in one country does not establish readiness in the other.
+
+## 17. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Standard migration toolkit | Repeatable implementation | Strategic opportunity |
+| Automated source-to-target mapping | Reduce manual work | Strategic opportunity |
+| Bulk subscription migration API | Scale migration execution | Validate current API scope |
+| Migration validation dashboard | Improve visibility | Strategic opportunity |
+| Automated token portability workflow | Reduce reauthorization friction | Provider-dependent |
+| Automated customer reauthorization | Improve payment readiness | Integration opportunity |
+| Subscription lifecycle mapping engine | Reduce migration errors | Strategic opportunity |
+| Migration reconciliation engine | Improve financial control | Strategic opportunity |
+| Automated cutover orchestration | Reduce operational risk | Strategic opportunity |
+| Migration analytics | Measure adoption and continuity | Strategic opportunity |
+
+These opportunities must not be presented as released capabilities.
+
+## 18. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 19. Governance
+
+This is a reusable reference framework for merchant migration into FlexiBill.
+
+Before reusing it:
+1. Confirm the source and target systems.
+2. Define the migration scope.
+3. Validate data quality and mapping.
+4. Confirm target configuration.
+5. Validate payment credential portability or reauthorization.
+6. Test billing and payment continuity.
+7. Reconcile source and target records.
+8. Approve cutover and source billing shutdown.
+9. Monitor post-migration operations.
+10. Obtain merchant, DOKU Product, Engineering, Finance, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-008  
+**Review trigger:** Migration toolkit release, API change, payment credential policy change, country expansion, or material migration finding.
