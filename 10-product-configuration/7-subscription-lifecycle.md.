@@ -181,4 +181,325 @@ Illustrative setup:
 | Payment method | Authorized auto-debit |
 | Duration | Ongoing, subject to configured end condition |
 
-This example is illustrative. It does not establish the exact first-charge
+This example is illustrative. It does not establish the exact first-charge or renewal-date behavior of every FlexiBill configuration.
+
+## 7. Payment failure and recovery
+
+Payment failure should be managed as a payment and collection problem, not automatically treated as subscription cancellation.
+
+### Conceptual failure journey
+
+```text
+BILLING DUE
+    |
+    v
+PAYMENT ATTEMPT
+    |
+    v
+PAYMENT FAILED
+    |
+    v
+FAILURE CLASSIFICATION
+    |
+    +-------------------------+
+    |                         |
+    v                         v
+TEMPORARY FAILURE        CUSTOMER / METHOD ISSUE
+    |                         |
+    v                         v
+RETRY IF CONFIGURED      CUSTOMER ACTION
+    |                         |
+    +------------+------------+
+                 |
+                 v
+          PAYMENT RECOVERED?
+             /       \
+           YES        NO
+            |          |
+            v          v
+      CONTINUE      OVERDUE /
+      LIFECYCLE     GRACE / SUSPENSION /
+                    EXPIRATION
+```
+
+### Failure categories
+
+| Category | Example | Potential response |
+|---|---|---|
+| Temporary issuer issue | Issuer unavailable | Retry if permitted and configured |
+| Insufficient funds | Balance unavailable | Notify customer and retry according to policy |
+| Expired card | Card no longer valid | Request payment-method update |
+| Invalid credentials | Token or authorization issue | Investigate and re-authorize where required |
+| Customer cancellation | Customer withdraws authorization | Stop future collection as required |
+| Technical issue | Processing or integration failure | Investigate before retrying |
+
+Actual decline codes, retry eligibility, and recovery rules depend on the payment method and processing configuration.
+
+### Recovery policy
+
+Define:
+- Retry count.
+- Retry intervals.
+- Eligible failure categories.
+- Maximum recovery period.
+- Grace period.
+- Customer notification timing.
+- Payment-method update process.
+- Final overdue or suspension action.
+- Manual recovery ownership.
+
+Do not promise smart retry, issuer-aware optimization, or automated recovery capabilities unless they are confirmed in the current product scope.
+
+## 8. Grace period, overdue, and expiration
+
+These terms should have distinct business meanings.
+
+| Term | Meaning |
+|---|---|
+| Grace period | Additional time allowed after a billing failure or due date |
+| Overdue | A billing obligation remains unpaid |
+| Suspension | Service access is restricted or paused |
+| Expiration | A configured subscription term has ended |
+| Cancellation | The subscription is terminated according to the applicable rule |
+
+A merchant may use one or several of these states.
+
+### Example policy
+
+Illustrative only:
+
+- Day 0: Payment attempt fails.
+- Day 1: Customer receives a payment reminder.
+- Day 3: Retry if eligible.
+- Day 5: Second reminder.
+- Day 7: Merchant reviews unpaid account.
+- Day 10: Service may be suspended according to merchant policy.
+
+The actual timing must be agreed with the merchant and validated against available configuration.
+
+## 9. Plan changes: upgrade, downgrade, and repricing
+
+Plan changes are commercially important and technically sensitive.
+
+### Upgrade
+
+A customer moves to a higher-priced plan or service tier.
+
+Questions:
+- Does the new price apply immediately or next cycle?
+- Is the remaining period charged proportionally?
+- Is an additional payment collected?
+- Does the next renewal date change?
+- Does the merchant need to approve the change?
+
+### Downgrade
+
+A customer moves to a lower-priced plan.
+
+Questions:
+- Is the change immediate or deferred?
+- Is there a refund or credit?
+- Does the customer retain existing benefits until the next cycle?
+- Are there restrictions on downgrading?
+
+### Proration
+
+Proration means adjusting charges to account for a partial billing period.
+
+Do not claim native proration availability without validating the current FlexiBill capability and implementation. If the merchant calculates adjustments externally, document the amount source and how the adjustment is billed.
+
+### Capability distinction
+
+| Capability | Status to use internally |
+|---|---|
+| Configure different Plans and Prices | Validate against current configuration |
+| Create a new subscription using a different price | Validate current workflow |
+| Change an existing subscription through API | Validation required |
+| Automatic upgrade/downgrade proration | Validation required |
+| Effective-date scheduling | Validation required |
+| Multi-product subscription changes | Gap / strategic direction unless released |
+
+## 10. Pause, resume, and postponement
+
+These are different customer requests and should not be treated as interchangeable.
+
+| Action | Intended meaning | Key question |
+|---|---|---|
+| Pause | Temporarily stop service or subscription activity | Does billing stop too? |
+| Resume | Reactivate after a pause | What date and amount apply? |
+| Postpone | Move a future billing event to a later date | Does the recurring anchor change? |
+| Skip a cycle | Omit one billing period | Is the next cycle shifted or unchanged? |
+
+Validate whether each action is natively supported, requires merchant intervention, or must be handled through an external system.
+
+A pause in service does not necessarily mean that payment collection has been paused. Both rules must be explicitly defined.
+
+## 11. Cancellation and termination
+
+Cancellation should have a clearly defined effective date and billing outcome.
+
+Possible commercial policies include:
+
+- Immediate cancellation.
+- Cancellation at the end of the paid period.
+- Cancellation after a notice period.
+- Cancellation after a contract term.
+- Merchant-initiated termination.
+- Customer-initiated cancellation.
+
+Confirm:
+- Who is authorized to cancel.
+- Whether the cancellation is immediate or scheduled.
+- Whether future billing stops immediately.
+- Whether an outstanding invoice remains payable.
+- Whether a refund or credit applies.
+- Whether the customer can reactivate.
+- How cancellation is communicated.
+- How the final subscription status is recorded.
+
+Do not assume a customer-facing cancellation function exists in the Billing Portal without checking the deployed experience.
+
+## 12. Customer self-service
+
+The customer experience may be distributed across Pricing Table, Member Center, Billing Portal, and supported communication channels.
+
+| Customer action | Relevant interface | Validation |
+|---|---|---|
+| Discover an offer | Pricing Table | Confirm configured offer and checkout |
+| Register or identify | Member Center | Confirm available registration journey |
+| Review billing information | Billing Portal | Confirm enabled customer view |
+| Review payment status | Billing Portal or supported notification | Confirm status visibility |
+| Update payment method | Billing Portal or merchant-assisted flow | Confirm supported method and authorization |
+| Upgrade/downgrade | Billing Portal or merchant-assisted flow | Confirm native workflow |
+| Pause/resume | Billing Portal or merchant-assisted flow | Confirm native workflow |
+| Cancel | Billing Portal or merchant-assisted flow | Confirm native workflow |
+
+The interfaces have different roles. Do not describe a future self-service capability as a released feature.
+
+## 13. Merchant operations and monitoring
+
+Merchants should be able to answer:
+
+- How many subscriptions are active?
+- How many are due for billing?
+- How many were successfully collected?
+- How many failed?
+- How much revenue is overdue?
+- How many customers were recovered?
+- How many subscriptions were suspended?
+- How many were cancelled or expired?
+- How many customers changed plans?
+
+Recommended operational views:
+
+| View | Main metrics |
+|---|---|
+| Subscription portfolio | Active, new, cancelled, expired |
+| Upcoming billing | Due count and expected amount |
+| Collection performance | Attempts, success, failure |
+| Recovery | Recovered count, value, recovery time |
+| Retention | Renewal, churn, lapse |
+| Plan movement | Upgrade, downgrade, plan changes |
+| Revenue | Billed value, collected value, outstanding value |
+
+## 14. Lifecycle KPIs
+
+| KPI | Definition |
+|---|---|
+| New subscriptions | Subscriptions created in the reporting period |
+| Activation rate | Activated subscriptions divided by eligible created subscriptions |
+| Active subscription count | Subscriptions currently meeting the agreed active-state definition |
+| Renewal rate | Eligible subscriptions renewed divided by eligible subscriptions due |
+| First-attempt success rate | First payment attempts successful divided by first payment attempts |
+| Collection success rate | Successful collection attempts divided by total attempts |
+| Recovery rate | Failed obligations subsequently recovered divided by eligible failed obligations |
+| Grace-period recovery rate | Obligations recovered during the defined grace period divided by eligible failed obligations |
+| Churn rate | Subscriptions terminated in the period divided by the agreed opening or eligible base |
+| Lapse rate | Subscriptions reaching the defined lapsed condition divided by the eligible base |
+| Upgrade rate | Eligible subscriptions moving to a higher commercial tier |
+| Downgrade rate | Eligible subscriptions moving to a lower commercial tier |
+| Outstanding value | Total unpaid amount at the reporting cut-off |
+
+Always define the population, reporting period, and denominator. Renewal rate, collection success, and customer retention are not interchangeable.
+
+## 15. Testing and acceptance scenarios
+
+| Scenario | Expected business outcome |
+|---|---|
+| New subscription | Correct customer and plan association |
+| Successful first payment | Correct payment and activation handling |
+| Failed first payment | No unintended activation |
+| Successful renewal | Next billing obligation handled correctly |
+| Failed renewal | Correct failure and recovery handling |
+| Payment recovered | Correct payment and subscription status |
+| Grace period ends | Correct overdue or suspension action |
+| Upgrade | Correct new plan and effective date |
+| Downgrade | Correct new plan and effective date |
+| Pause | Service and billing behavior both verified |
+| Resume | Correct restart date and amount |
+| Cancellation | Future billing behavior verified |
+| Expiration | Correct end-of-term behavior |
+| Duplicate payment event | No duplicate state transition |
+| Duplicate subscription request | No unintended duplicate subscription |
+| Payment reversal | Correct reconciliation and operational follow-up |
+
+## 16. Country validation: Indonesia and Malaysia
+
+Validate each country independently.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Subscription creation | Confirm current workflow | Confirm current workflow |
+| Recurring frequency | Confirm supported options | Confirm supported options |
+| Payment methods | Confirm merchant eligibility | Confirm merchant eligibility |
+| Auto-debit authorization | Confirm channel-specific requirements | Confirm channel-specific requirements |
+| Retry and recovery | Confirm payment-method rules | Confirm payment-method rules |
+| Grace and overdue | Confirm configuration and ownership | Confirm configuration and ownership |
+| Member Center | Confirm API and frontend availability separately | Confirm API and frontend availability separately |
+| Billing Portal | Confirm enabled functions | Confirm enabled functions |
+| Plan changes | Validate current support | Validate current support |
+| Pause/resume/cancel | Validate current support | Validate current support |
+
+## 17. Go-live checklist
+
+- [ ] Subscription commercial model approved.
+- [ ] Collection, Plan, and Pricing configuration validated.
+- [ ] Customer/member mapping tested.
+- [ ] First billing and activation rules approved.
+- [ ] Recurring schedule tested.
+- [ ] Payment authorization confirmed.
+- [ ] Payment failure handling defined.
+- [ ] Retry and recovery policy approved.
+- [ ] Grace and overdue policy approved.
+- [ ] Plan-change behavior validated.
+- [ ] Pause/resume behavior validated, if required.
+- [ ] Cancellation and expiration rules tested.
+- [ ] Customer communication approved.
+- [ ] Merchant operational reporting validated.
+- [ ] Indonesia and Malaysia scope independently confirmed.
+
+## 18. Related playbooks
+
+- [Collection Management](01-collection-management.md)
+- [Plan and Pricing Configuration](02-plan-and-pricing-configuration.md)
+- [Pricing Table](03-pricing-table.md)
+- [Member Center](04-member-center.md)
+- [Billing Portal](05-billing-portal.md)
+- [Account Billing](06-account-billing.md)
+- [Payment Management](08-payment-management.md)
+- [Configuration Reference Matrix](09-configuration-reference-matrix.md)
+
+## 19. Governance and source validation
+
+This playbook is an internal lifecycle and implementation guide. It is not a statement that every described lifecycle transition is natively automated by FlexiBill.
+
+Before merchant commitment:
+1. Validate current product documentation.
+2. Confirm supported subscription statuses and transitions.
+3. Confirm which events are native, API-driven, webhook-driven, or merchant-managed.
+4. Test first payment, renewal, failure, recovery, plan changes, and termination.
+5. Validate ID and MY independently.
+6. Record unsupported functions as product gaps or roadmap candidates.
+
+**Owner:** FlexiBill Product  
+**Review trigger:** Product release, API change, payment-channel change, country expansion, or material implementation finding.
