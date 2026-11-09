@@ -1,1 +1,743 @@
+# Insurance Premium Collection — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-002  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Operations  
+**Status:** Reference solution — validate product capabilities, payment-channel eligibility, insurance workflows, and country scope before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+An insurance company needs to collect recurring premiums from policyholders across multiple payment methods and distribution channels.
+
+The merchant wants to:
+
+- Register and identify policyholders.
+- Associate each policyholder with one or more policies.
+- Collect premiums on scheduled billing dates.
+- Support recurring auto-debit where eligible.
+- Monitor successful and failed premium collections.
+- Recover failed payments within the permitted collection period.
+- Monitor renewal, persistency, lapse, and reinstatement.
+- Reconcile payment outcomes with policy and premium records.
+- Support direct and bancassurance distribution models.
+
+### Proposed solution
+
+Use FlexiBill as the billing and payment orchestration layer connecting the insurance company's premium obligations with eligible payment collection methods.
+
+The solution must distinguish three separate business objects:
+
+1. **Policyholder:** The person or organization responsible for the insurance relationship.
+2. **Policy:** The insurance contract or coverage relationship.
+3. **Premium billing obligation:** The amount due for a particular billing period.
+
+A policyholder may have multiple policies. A policy may generate multiple premium obligations over time. A payment attempt is not the same as a premium billing obligation.
+
+This distinction is essential for accurate renewal, persistency, recovery, and lapse reporting.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Merchant:** ABC Life Insurance  
+**Business:** Life and protection insurance  
+**Distribution:** Direct sales, agents, bancassurance  
+**Collection model:** Monthly, quarterly, semi-annual, or annual premiums
+
+### Current business problems
+
+| Problem | Business impact |
+|---|---|
+| Fragmented policyholder and billing records | Difficult customer-level monitoring |
+| Failed recurring collection | Premium revenue leakage |
+| Inconsistent payment references | Reconciliation complexity |
+| Manual follow-up | Higher collection cost |
+| Delayed failure visibility | Reduced recovery opportunity |
+| Limited renewal monitoring | Poor persistency visibility |
+| Multiple distribution channels | Complex ownership and reporting |
+
+### Desired outcomes
+
+1. Improve premium collection success.
+2. Reduce failed and unrecovered premium obligations.
+3. Increase recovery within the permitted grace period.
+4. Improve renewal and persistency monitoring.
+5. Reduce manual reconciliation.
+6. Provide consistent reporting across distribution channels.
+7. Improve visibility into policyholder payment behavior.
+
+## 3. Insurance billing model
+
+### Core data model
+
+| Object | Meaning | Example identifier |
+|---|---|---|
+| Policyholder | Customer responsible for the policy | Customer ID |
+| Policy | Insurance contract | Policy Number |
+| Product | Insurance product or coverage | Product Code |
+| Distribution channel | Direct, agent, bank, bancassurance | Channel Code |
+| Premium obligation | Amount due for a billing cycle | Premium Billing ID |
+| Payment attempt | Individual collection attempt | Payment Transaction ID |
+| Subscription | Recurring billing relationship, where used | Subscription ID |
+
+### Recommended relationship
+
+```text id="i7v4lq"
+POLICYHOLDER
+    |
+    +------------------+
+    |                  |
+    v                  v
+ POLICY A           POLICY B
+    |                  |
+    v                  v
+PREMIUM A1          PREMIUM B1
+PREMIUM A2          PREMIUM B2
+PREMIUM A3          PREMIUM B3
+    |                  |
+    v                  v
+PAYMENT ATTEMPTS    PAYMENT ATTEMPTS
+```
+
+Do not use a payment transaction ID as the permanent policy identifier.
+
+The merchant should maintain stable references between policyholder, policy, billing obligation, and payment transaction.
+
+## 4. Insurance premium collection models
+
+### Model A — Direct recurring premium
+
+The insurer manages policyholder registration and recurring premium collection.
+
+```text id="1m6kxa"
+POLICYHOLDER
+     |
+     v
+POLICY CREATED
+     |
+     v
+PREMIUM SCHEDULE DEFINED
+     |
+     v
+RECURRING BILLING RELATIONSHIP
+     |
+     v
+PREMIUM BILLING
+     |
+     v
+PAYMENT COLLECTION
+     |
+     v
+PAYMENT RESULT
+     |
+     v
+INSURER POLICY SYSTEM
+```
+
+### Model B — Bancassurance
+
+The insurance policy originates through a bank or banking distribution partner.
+
+The implementation must preserve both insurance and distribution references.
+
+```text id="xwqj4d"
+BANK / BANCASSURANCE CHANNEL
+           |
+           v
+      POLICY ORIGINATION
+           |
+           v
+      POLICYHOLDER DATA
+           |
+           v
+      INSURANCE POLICY
+           |
+           v
+      PREMIUM BILLING
+           |
+           v
+      FLEXIBILL COLLECTION
+           |
+           v
+      PAYMENT RESULT
+           |
+           v
+ INSURER + BANK RECONCILIATION
+```
+
+Required mapping may include:
+
+- Insurance merchant ID.
+- Bank or distribution partner ID.
+- Policyholder ID.
+- Policy number.
+- Premium billing ID.
+- Product code.
+- Collection reference.
+- Payment transaction reference.
+
+The exact source of each identifier must be agreed during implementation.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text id="9m8yva"
+       INSURANCE POLICY SYSTEM
+                 |
+                 v
+       POLICYHOLDER / POLICY DATA
+                 |
+                 v
+       BILLING OBLIGATION SOURCE
+                 |
+                 v
+       FLEXIBILL CONFIGURATION
+       Collection / Plan / Pricing
+                 |
+                 v
+        BILLING ORCHESTRATION
+                 |
+                 v
+         PAYMENT COLLECTION
+                 |
+           +-----+-----+
+           |           |
+           v           v
+        SUCCESS      FAILURE
+           |           |
+           v           v
+     PAID PREMIUM   RECOVERY FLOW
+           |           |
+           +-----+-----+
+                 |
+                 v
+       PAYMENT STATUS / WEBHOOK
+                 |
+                 v
+       INSURER POLICY SYSTEM
+                 |
+                 v
+       RECONCILIATION / REPORTING
+```
+
+### System responsibility
+
+| Responsibility | Primary owner |
+|---|---|
+| Policy creation and coverage | Insurer policy administration system |
+| Policyholder master data | Insurer or approved source system |
+| Premium calculation | Insurer |
+| Premium due date and obligation | Insurer or agreed billing source |
+| Billing configuration | FlexiBill / agreed integration |
+| Payment collection | DOKU payment infrastructure |
+| Payment result | DOKU and integrated merchant systems |
+| Policy status and coverage decision | Insurer |
+| Lapse and reinstatement decision | Insurer |
+| Financial reconciliation | Insurer and DOKU according to agreed responsibilities |
+
+FlexiBill payment status must not automatically be treated as an insurance coverage decision. The insurer remains responsible for policy status and coverage rules.
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Define Collection structure
+
+Possible Collection structures:
+
+| Collection | Purpose |
+|---|---|
+| Direct Individual | Direct policyholder portfolio |
+| Bancassurance Bank A | Policies from Bank A |
+| Bancassurance Bank B | Policies from Bank B |
+| Agent Channel | Agent-originated policies |
+| Corporate Insurance | Corporate policy relationships |
+
+The final structure should support merchant operations, reporting, and access control without unnecessary fragmentation.
+
+### Step 2 — Define Plans
+
+Example Plans:
+
+- Life Protection Monthly.
+- Life Protection Annual.
+- Health Protection Monthly.
+- Personal Accident Annual.
+- Corporate Protection.
+- Bancassurance Protection.
+
+These are illustrative product groupings. The insurer's product and policy systems remain the source of truth for coverage terms.
+
+### Step 3 — Configure premium pricing
+
+| Product | Premium | Frequency |
+|---|---:|---|
+| Life Protection A | Rp500,000 | Monthly |
+| Life Protection B | Rp1,000,000 | Monthly |
+| Health Protection A | Rp2,500,000 | Annual |
+| Personal Accident | Rp300,000 | Annual |
+| Corporate Protection | Contract-defined | Contract-defined |
+
+Use the appropriate supported pricing model.
+
+Do not assume FlexiBill calculates actuarial premiums. Premium calculation should remain with the insurer unless a separately approved design states otherwise.
+
+### Step 4 — Establish policyholder and policy references
+
+Required data mapping:
+
+| Field | Purpose |
+|---|---|
+| Policyholder ID | Customer-level identity |
+| Policy number | Insurance contract reference |
+| Premium billing ID | Unique premium obligation |
+| Product code | Insurance product |
+| Distribution channel | Direct or partner channel |
+| Bank/partner code | Bancassurance mapping |
+| Premium amount | Amount due |
+| Billing period | Period covered by the premium |
+| Due date | Scheduled collection date |
+| Payment reference | Transaction correlation |
+
+Use consistent, unique references across every billing cycle.
+
+### Step 5 — Establish recurring billing
+
+Define:
+
+- Billing frequency.
+- First billing date.
+- Recurring billing date.
+- Premium amount source.
+- Subscription or recurring relationship.
+- End condition.
+- Payment authorization.
+- Failure handling.
+- Grace-period policy.
+
+Validate whether the merchant should use a native subscription workflow, Account Billing, or an API/H2H integration.
+
+The correct choice depends on who owns premium scheduling and billing obligation generation.
+
+### Step 6 — Configure payment collection
+
+Confirm the eligible payment methods for each market and insurance use case.
+
+Validate:
+
+- Recurring payment authorization.
+- Token or mandate lifecycle, where applicable.
+- Initial payment behavior.
+- Subsequent collection behavior.
+- Payment-method expiry or replacement.
+- Failed-payment response.
+- Transaction status and notification.
+- Refund and reversal handling.
+
+Do not assume all payment methods support recurring collection.
+
+## 7. End-to-end customer journey
+
+### Journey A — New policyholder enrollment
+
+```text id="m7t4be"
+CUSTOMER SELECTS INSURANCE
+          |
+          v
+INSURANCE APPLICATION
+          |
+          v
+POLICY ISSUED / APPROVED
+          |
+          v
+PREMIUM AND BILLING SCHEDULE DEFINED
+          |
+          v
+CUSTOMER SELECTS PAYMENT METHOD
+          |
+          v
+RECURRING AUTHORIZATION
+          |
+          v
+FIRST PREMIUM COLLECTION
+          |
+          v
+INSURER CONFIRMS POLICY STATUS
+```
+
+The insurer determines when the policy becomes active and whether payment is required before coverage starts.
+
+### Journey B — Recurring premium collection
+
+```text id="v2c9qw"
+PREMIUM DUE DATE
+       |
+       v
+PREMIUM BILLING OBLIGATION
+       |
+       v
+COLLECTION INITIATED
+       |
+       v
+PAYMENT RESULT
+    /       \
+   /         \
+SUCCESS     FAILURE
+  |            |
+  v            v
+PAYMENT      FAILURE
+CONFIRMED    CLASSIFICATION
+  |            |
+  v            v
+INSURER      RECOVERY
+STATUS       PROCESS
+UPDATE          |
+                v
+          OUTCOME UPDATE
+```
+
+### Journey C — Failed premium recovery
+
+1. Collection attempt fails.
+2. Payment failure is recorded.
+3. Insurer receives the payment result.
+4. Customer receives an appropriate notification.
+5. Eligible recovery action is initiated.
+6. Subsequent payment result is reconciled against the original premium obligation.
+7. Insurer applies the relevant policy and grace-period rules.
+8. Unrecovered obligations are escalated according to insurer policy.
+
+A retry is a new payment attempt against the relevant billing obligation, not a new policy or a new premium obligation.
+
+## 8. Grace period, lapse, and reinstatement
+
+Insurance collection requires a clear distinction between payment status and policy status.
+
+| Concept | Meaning | Owner |
+|---|---|---|
+| Premium due | Premium obligation has reached its due date | Insurer / billing source |
+| Payment pending | Collection result is not final | Payment flow |
+| Payment failed | Collection attempt was unsuccessful | Payment flow |
+| Outstanding premium | Premium remains unpaid | Insurer |
+| Grace period | Contractual period defined by insurer | Insurer |
+| Lapsed policy | Policy status changed under policy terms | Insurer |
+| Reinstatement | Policy restored under insurer rules | Insurer |
+
+### Example timeline
+
+Illustrative only:
+
+```text
+DUE DATE
+   |
+   v
+INITIAL COLLECTION
+   |
+   v
+PAYMENT FAILURE
+   |
+   v
+RECOVERY WINDOW
+   |
+   +------> SUCCESSFUL RECOVERY
+   |                 |
+   |                 v
+   |          INSURER STATUS UPDATE
+   |
+   +------> STILL UNPAID
+                     |
+                     v
+             GRACE PERIOD ENDS
+                     |
+                     v
+              INSURER ASSESSES
+               POLICY STATUS
+                     |
+                     v
+              LAPSE / OTHER
+              CONTRACT ACTION
+```
+
+Do not hardcode a universal 90-day grace period. The applicable period depends on the insurance product, policy terms, market, and insurer rules.
+
+FlexiBill can support collection monitoring and payment recovery workflows subject to product capability. It must not independently decide whether coverage is suspended, lapsed, or reinstated.
+
+## 9. Renewal and persistency monitoring
+
+### Business questions
+
+The insurer should be able to answer:
+
+- How many policies were due for renewal?
+- How many paid successfully?
+- How many failed initially but were recovered?
+- How many remained unpaid?
+- How many reached lapse status?
+- Which distribution channels have higher failure rates?
+- Which payment methods have better collection performance?
+- Which policy cohorts have weaker persistency?
+- How much premium value remains at risk?
+
+### Recommended cohort logic
+
+Use a stable policy identifier to track renewal over time.
+
+| Cohort measure | Definition |
+|---|---|
+| New business | Unique policy first observed in the defined reporting period |
+| Renewal eligible | Policy due for a subsequent premium obligation |
+| Renewed | Eligible policy with the required renewal outcome |
+| Failed renewal | Eligible policy whose collection did not succeed by the defined cut-off |
+| Recovered | Previously failed premium obligation subsequently paid |
+| Lapsed | Policy officially marked lapsed by insurer |
+| Persistency | Eligible policies remaining in force under the agreed definition |
+
+Do not equate a failed payment attempt with a lapsed policy.
+
+### Recommended reporting dimensions
+
+- Product.
+- Policy cohort.
+- Premium amount band.
+- Billing frequency.
+- Payment method.
+- Bank or issuer.
+- Distribution channel.
+- Agent.
+- Billing date.
+- Failure category.
+- Recovery period.
+- Policy status.
+
+## 10. Revenue leakage and recovery dashboard
+
+### Illustrative dashboard
+
+| Metric | Example |
+|---|---:|
+| Premium obligations due | 10,000 |
+| Successful first collections | 7,800 |
+| Failed first collections | 2,200 |
+| Recovered obligations | 1,100 |
+| Unrecovered obligations | 1,100 |
+| First-attempt success rate | 78% |
+| Recovery rate | 50% |
+
+Figures are illustrative and must not be treated as FlexiBill performance benchmarks.
+
+### Recommended calculations
+
+**First-attempt success rate**
+
+`Premium obligations successfully collected on first attempt / Total premium obligations attempted × 100`
+
+**Recovery rate**
+
+`Failed premium obligations subsequently recovered / Eligible failed premium obligations × 100`
+
+**Unrecovered premium value**
+
+`Total value of premium obligations still unpaid at the reporting cut-off`
+
+**Persistency rate**
+
+`Policies remaining in force at the defined duration / Policies eligible for that persistency measurement × 100`
+
+The denominator, duration, exclusions, and policy-status rules must be agreed with the insurer.
+
+### Operational segmentation
+
+Use a structured failure taxonomy:
+
+| Failure category | Potential action |
+|---|---|
+| Insufficient funds | Notify customer; retry only under approved rules |
+| Expired payment credential | Request payment-method update |
+| Authorization issue | Resolve authorization or mandate issue |
+| Bank or issuer decline | Follow permitted recovery policy |
+| Technical failure | Investigate transaction and retry eligibility |
+| Invalid customer or policy mapping | Correct reference data |
+| Duplicate or uncertain result | Reconcile before initiating another collection |
+
+## 11. Bancassurance implementation
+
+Bancassurance requires stronger data mapping and reconciliation because the insurer and bank may maintain separate customer and transaction references.
+
+### Required mapping
+
+| Data field | Insurer | Bank | DOKU / FlexiBill |
+|---|---|---|---|
+| Policy number | Primary | May hold reference | Correlation reference |
+| Policyholder ID | Primary | Bank customer ID | Agreed mapping |
+| Bank customer ID | May receive | Primary | Agreed mapping |
+| Premium billing ID | Primary | May receive | Billing reference |
+| Collection reference | Agreed | Agreed | Transaction correlation |
+| Payment transaction ID | Receives | May receive | Payment reference |
+| Distribution channel | Primary | Primary source | Reporting dimension |
+
+### Reconciliation controls
+
+- Preserve the original policy number.
+- Preserve the premium billing ID.
+- Preserve the bank/distribution reference.
+- Match every payment attempt to its premium obligation.
+- Handle late and duplicate notifications safely.
+- Separate payment settlement from policy status.
+- Agree reporting ownership and dispute handling.
+
+## 12. Customer experience and communication
+
+Recommended customer communication events:
+
+| Event | Communication purpose |
+|---|---|
+| Enrollment | Confirm registration and next steps |
+| Authorization | Explain recurring payment consent |
+| Upcoming premium | Remind customer of scheduled premium |
+| Successful collection | Confirm payment result |
+| Failed collection | Explain failure and next action |
+| Payment recovery | Confirm successful recovery |
+| Payment-method issue | Request an eligible update |
+| Policy status change | Communicate only after insurer confirmation |
+
+The insurer owns policy-related disclosures and coverage communication. Payment notifications must not imply that coverage is active or terminated unless the insurer has confirmed the relevant status.
+
+## 13. Indonesia and Malaysia considerations
+
+Validate the implementation separately for each country.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Insurer onboarding | Confirm eligibility | Confirm eligibility |
+| Direct collection | Confirm model and channels | Confirm model and channels |
+| Bancassurance | Confirm bank integration | Confirm bank integration |
+| Recurring card | Confirm eligibility and authorization | Confirm eligibility and authorization |
+| Bank-based auto-debit | Confirm supported channels | Confirm supported channels |
+| Billing schedule | Validate configuration | Validate configuration |
+| Member / policyholder mapping | Validate references | Validate references |
+| Grace-period logic | Insurer-defined | Insurer-defined |
+| Retry behavior | Confirm payment rules | Confirm payment rules |
+| Notifications | Confirm supported channels | Confirm supported channels |
+| Reporting and reconciliation | Confirm fields and exports | Confirm fields and exports |
+| Currency and tax | Confirm local requirements | Confirm local requirements |
+
+Never assume that an Indonesian bank, mandate, or payment method is available in Malaysia, or vice versa.
+
+## 14. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| INS-001 | Register policyholder | Correct customer reference |
+| INS-002 | Associate policy | Correct policy mapping |
+| INS-003 | Create premium obligation | Unique billing reference |
+| INS-004 | Configure recurring billing | Correct schedule and amount |
+| INS-005 | Authorize payment method | Valid authorization evidence |
+| INS-006 | Successful first collection | Correct billing and transaction mapping |
+| INS-007 | Failed first collection | Failure recorded and communicated |
+| INS-008 | Retry eligible payment | No duplicate premium obligation |
+| INS-009 | Successful recovery | Original obligation marked appropriately |
+| INS-010 | Unrecovered premium | Outstanding amount remains visible |
+| INS-011 | Grace-period boundary | Insurer policy rules applied |
+| INS-012 | Lapse status update | Only insurer-confirmed status is used |
+| INS-013 | Reinstatement | Insurer status and payment references reconcile |
+| INS-014 | Bancassurance mapping | Bank and insurer references reconcile |
+| INS-015 | Duplicate webhook | No duplicate financial or policy action |
+| INS-016 | Renewal cohort reporting | Correct policy-level denominator |
+| INS-017 | Reconciliation | Payment outcome matches billing obligation |
+
+## 15. Go-live checklist
+
+### Business and insurance policy
+- [ ] Premium products and frequencies approved.
+- [ ] Policyholder and policy identifiers defined.
+- [ ] Grace-period and lapse rules documented by insurer.
+- [ ] Renewal and reinstatement ownership agreed.
+- [ ] Direct and bancassurance scope defined.
+
+### Product and integration
+- [ ] Collection and Plan structure validated.
+- [ ] Premium amount source confirmed.
+- [ ] Subscription or Account Billing model selected.
+- [ ] API/H2H requirements documented.
+- [ ] Payment references mapped.
+- [ ] Webhook and notification behavior tested.
+- [ ] Member Center / customer interface requirements validated separately.
+
+### Payment
+- [ ] Recurring payment eligibility confirmed.
+- [ ] Customer authorization tested.
+- [ ] Failure categories mapped.
+- [ ] Recovery rules approved.
+- [ ] Duplicate and uncertain outcomes handled safely.
+
+### Operations and reporting
+- [ ] Policy-to-billing reconciliation tested.
+- [ ] Bancassurance mapping tested, if applicable.
+- [ ] Renewal cohort logic approved.
+- [ ] Persistency definition approved.
+- [ ] Recovery dashboard validated.
+- [ ] Support and escalation owners assigned.
+- [ ] Country-specific readiness approved.
+
+## 16. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Policy-level billing orchestration | Better policy-to-premium mapping | Requires implementation design |
+| Advanced premium recovery optimization | Improve collection recovery | Validate current capability |
+| Automated renewal intelligence | Identify renewal risk | Analytics / strategic opportunity |
+| Bancassurance partner dashboard | Shared collection visibility | Integration / strategic opportunity |
+| Policyholder self-service | Better payment and billing experience | Validate Billing Portal scope |
+| Multiple policies per customer | Consolidated customer view | Validate data model and reporting |
+| Native lapse prediction | Early identification of at-risk policies | Future analytics opportunity |
+| Automated reinstatement orchestration | Reduce operational handoffs | Insurer integration required |
+| Cross-merchant bill hub | Consolidated bill payment experience | Strategic concept, not generally available |
+
+## 17. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Collection improvement | First-attempt success rate |
+| Revenue recovery | Recovery rate and recovered premium value |
+| Renewal improvement | Renewal collection rate |
+| Retention | Persistency and insurer-confirmed lapse rate |
+| Operational efficiency | Manual follow-up and reconciliation effort |
+| Payment experience | Failed-payment customer resolution time |
+| Channel performance | Success and recovery by distribution channel |
+| Financial control | Unreconciled premium and payment value |
+
+Agree the reporting cut-off and business definitions before comparing performance across periods or insurers.
+
+## 18. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 19. Governance
+
+This is a reusable reference solution for insurance premium collection.
+
+Before reusing it:
+1. Validate FlexiBill capabilities and integration scope.
+2. Confirm insurer ownership of policy and premium data.
+3. Confirm payment-method eligibility and authorization.
+4. Define premium obligation and transaction references.
+5. Agree grace-period, lapse, and reinstatement rules with the insurer.
+6. Validate country-specific requirements.
+7. Obtain insurer, DOKU Product, Engineering, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-002  
+**Review trigger:** Product release, payment-channel change, insurer integration change, country expansion, or material implementation finding.
