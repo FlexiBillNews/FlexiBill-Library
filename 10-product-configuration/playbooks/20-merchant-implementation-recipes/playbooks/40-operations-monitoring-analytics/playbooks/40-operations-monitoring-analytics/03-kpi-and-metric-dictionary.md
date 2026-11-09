@@ -325,4 +325,377 @@ A leakage estimate should distinguish:
 2. Value recovered within the observation window.
 3. Value still outstanding.
 4. Value cancelled or otherwise no longer collectible.
-5. Value confirmed
+5. Value confirmed lost under the merchant's accounting or business rules.
+
+Do not label all failed billing value as lost revenue.
+
+Where confirmed loss data is unavailable, use the term **unrecovered billing exposure**, not confirmed revenue loss.
+
+### 7.7 Recovery opportunity
+
+`Recovery Opportunity = Eligible Unrecovered Billing Value × Assumed Recoverable Share`
+
+The recoverable share must be an explicit assumption or supported by historical cohort data.
+
+Show conservative, base, and upside scenarios separately. Do not present potential recovery as guaranteed revenue.
+
+## 8. Subscriber and subscription health KPIs
+
+### 8.1 Active subscribers
+
+An active subscriber definition must be agreed with the merchant.
+
+A possible operational definition is:
+
+`Active Subscribers = COUNT(DISTINCT Subscriber ID Meeting the Agreed Active-State Rules at Snapshot Date)`
+
+Specify treatment of:
+
+- Active
+- Trial
+- Paused
+- Overdue
+- Cancelled
+- Expired
+- Grace period
+- Suspended
+
+A subscriber with an overdue billing may still be considered active under one merchant's rules and inactive under another's.
+
+### 8.2 New subscribers
+
+`New Subscribers = COUNT(DISTINCT Subscriber ID First Activated During Period)`
+
+Use activation date, not merely account creation date, unless the business definition explicitly uses registration.
+
+### 8.3 New business billing cohort
+
+For recurring billing and insurance analysis, use a clearly documented cohort rule.
+
+**Recommended analysis rule:** New business in a month is the set of unique Billing IDs first appearing in that month's available dataset.
+
+`New Business Billing Cohort (Month M) = Billing IDs whose First Observed Month = M`
+
+This is a dataset-based first-observed definition. It may differ from actual customer acquisition or policy inception if historical records are incomplete.
+
+### 8.4 Renewal rate
+
+`Renewal Rate = Eligible Subscribers or Billing Obligations Successfully Renewed / Eligible Subscribers or Billing Obligations Due for Renewal × 100`
+
+State whether the unit is a subscriber, subscription, policy, or billing obligation.
+
+Use one consistent unit in numerator and denominator.
+
+### 8.5 Persistency
+
+Persistency measures the proportion of a defined starting cohort that remains in force or continues to meet the agreed active/renewed condition after a specified period.
+
+`Persistency at Period T = Cohort Members Meeting the Persistency Rule at T / Eligible Starting Cohort Members × 100`
+
+Specify:
+
+- Cohort entry date
+- Observation period
+- Renewal eligibility
+- Grace-period treatment
+- Cancellation and reinstatement rules
+- Subscriber or policy identifier
+
+### 8.6 Lapse rate
+
+`Lapse Rate = Eligible Cohort Members Lapsed by Cutoff / Eligible Cohort Members Due for Continuation × 100`
+
+A lapse is determined by the merchant's contract and policy rules.
+
+For some bancassurance arrangements, a grace period of approximately 90 days may apply. This is not a universal FlexiBill rule. Validate each insurer's grace, reinstatement, and lapse definitions.
+
+### 8.7 Subscriber churn
+
+`Subscriber Churn Rate = Subscribers Lost During Period / Eligible Starting Active Subscriber Base × 100`
+
+Define whether the denominator is opening subscribers or average subscribers. Do not mix these methods across reports.
+
+### 8.8 ARPU
+
+`ARPU = Recognized Revenue or Agreed Billing Value / Average Active Subscribers`
+
+State whether ARPU uses recognized revenue, collected value, or billed value. These are different business measures.
+
+### 8.9 Amount movement
+
+Track recurring amount changes between comparable billing periods:
+
+- Upgrade: amount increases
+- Downgrade: amount decreases
+- No change
+- New charge or add-on
+- Discount or coupon change
+- Tax or fee change
+- Partial period / proration adjustment
+
+`Amount Movement = Current Comparable Billing Amount - Previous Comparable Billing Amount`
+
+Do not classify a tax, currency, or one-time adjustment as a plan upgrade without checking the underlying commercial reason.
+
+## 9. Finance and reconciliation KPIs
+
+### 9.1 Settlement value
+
+`Settlement Value = SUM(Amount Settled in the Defined Settlement Period)`
+
+Settlement period may differ from transaction creation or payment success period.
+
+### 9.2 Settlement completion rate
+
+`Settlement Completion Rate = Eligible Successful Transaction Value Settled / Eligible Successful Transaction Value Expected to Settle × 100`
+
+Define expected settlement timing and treatment of reserves, fees, reversals, and adjustments.
+
+### 9.3 Reconciliation match rate
+
+`Reconciliation Match Rate = Matched Eligible Records / Total Eligible Records × 100`
+
+Define the reconciliation unit: transaction, billing, settlement line, or accounting entry.
+
+### 9.4 Unmatched transaction count
+
+`Unmatched Transaction Count = COUNT(Eligible Records Without a Valid Match)`
+
+Separate missing, duplicate, amount-mismatch, status-mismatch, and timing-difference exceptions.
+
+### 9.5 Refund rate
+
+`Refund Rate = Refunded Transaction Count / Eligible Successful Transaction Count × 100`
+
+Also report refund value rate:
+
+`Refund Value Rate = Refunded Value / Eligible Successful Transaction Value × 100`
+
+State whether partial refunds are counted by transaction or refund event.
+
+### 9.6 Net collected value
+
+A reporting calculation may be:
+
+`Net Collected Value = Successful Collection Value - Refunds - Reversals`
+
+Do not deduct MDR or other fees unless the metric is explicitly defined as net settlement or merchant proceeds.
+
+## 10. API, webhook, and integration KPIs
+
+### 10.1 API availability
+
+`API Availability = Available Monitoring Intervals / Total Eligible Monitoring Intervals × 100`
+
+Define endpoint scope, maintenance exclusions, monitoring frequency, and timeout threshold.
+
+### 10.2 API success rate
+
+`API Success Rate = Successful Eligible API Requests / Total Eligible API Requests × 100`
+
+Separate technical HTTP/API success from successful business outcomes.
+
+An accepted API request does not prove that a billing was generated or a payment collected.
+
+### 10.3 API latency
+
+Measure response time using median, P95, and P99.
+
+Report by endpoint and operation type where possible.
+
+### 10.4 Webhook delivery success
+
+`Webhook Delivery Success Rate = Successfully Delivered Webhook Events / Eligible Webhook Delivery Events × 100`
+
+Define whether the denominator is unique events or delivery attempts.
+
+Report both when retries are involved.
+
+### 10.5 Webhook processing success
+
+`Webhook Processing Success Rate = Successfully Processed Unique Events / Eligible Unique Events Received × 100`
+
+Delivery success and business processing success are separate measures.
+
+### 10.6 Duplicate event rate
+
+`Duplicate Event Rate = Duplicate Events Detected / Total Events Received × 100`
+
+Use event identifiers or an approved deduplication key.
+
+### 10.7 Event processing delay
+
+`Event Processing Delay = Processing Timestamp - Event Creation or Receipt Timestamp`
+
+State which timestamp starts the measurement.
+
+## 11. Customer experience and operational KPIs
+
+Potential measures include:
+
+| KPI | Definition |
+|---|---|
+| Support ticket volume | Count of eligible FlexiBill-related support cases |
+| Billing-related contact rate | Billing-related cases / eligible billings |
+| Payment-related contact rate | Payment-related cases / eligible payment transactions |
+| First response time | Time from ticket creation to first human response |
+| Resolution time | Time from ticket creation to resolution |
+| Repeat contact rate | Cases reopened or repeated for the same issue / eligible cases |
+| Dispute rate | Disputed transactions / eligible successful transactions |
+| Complaint rate | Relevant complaints / defined customer population |
+
+Define case taxonomy, deduplication, SLA calendar, and customer-level grouping before comparing merchants.
+
+## 12. KPI definition register
+
+Every production dashboard KPI should have a governed definition.
+
+| Required field | Description |
+|---|---|
+| KPI name | Standard business label |
+| Purpose | Decision the KPI supports |
+| Definition | Exact business meaning |
+| Grain | Attempt, transaction, billing, subscription, subscriber, settlement |
+| Numerator | Exact qualifying population |
+| Denominator | Exact eligible population |
+| Formula | Calculation |
+| Attribution date | Creation, due, attempt, success, settlement, or snapshot |
+| Observation window | Time allowed for outcome to mature |
+| Exclusions | Cancelled, duplicate, test, reversed, or other records |
+| Pending treatment | Separate, exclude, or include under an explicit rule |
+| Currency | IDR, MYR, or approved converted reporting currency |
+| Source | System, table, report, or event |
+| Owner | Accountable business or technical function |
+| Refresh frequency | Real-time, hourly, daily, monthly |
+| Limitations | Known data-quality or interpretation issues |
+
+## 13. Standard dashboard KPI hierarchy
+
+### Executive view
+
+- Unique billing value due
+- Unique billing value collected
+- Billing-level collection success
+- Initially failed billing value
+- Recovered value
+- Unrecovered billing exposure
+- Active subscribers
+- Renewal / persistency
+- Settlement and reconciliation status
+
+### Operations view
+
+- Billing generation volume
+- Overdue billings
+- Attempt-level success and failure
+- Pending transactions
+- Retry performance
+- Recovery rate
+- Time to recovery
+- Exception backlog
+
+### Product and Engineering view
+
+- API availability and latency
+- API success rate
+- Webhook delivery and processing
+- Duplicate events
+- Billing generation errors
+- Integration exception volume
+
+### Merchant view
+
+- Billing value due and collected
+- Collection success by segment
+- Failed and recovered billings
+- Subscriber continuation
+- Outstanding exposure
+- Merchant-specific operational exceptions
+
+## 14. Country and currency rules
+
+Indonesia and Malaysia must be measured as separate operating markets.
+
+- Preserve original transaction and billing currency.
+- Report IDR and MYR separately.
+- Use an approved FX rate, source, and conversion date when consolidated reporting is required.
+- Do not compare nominal IDR and MYR amounts without normalization.
+- Validate local payment methods, settlement cycles, tax treatment, banking calendars, and merchant configurations independently.
+- Do not assume that an integration, retry rule, or product capability available in Indonesia is also available in Malaysia.
+
+## 15. Data quality controls
+
+Before publishing a KPI:
+
+1. Validate unique identifiers.
+2. Check duplicate Billing IDs and transaction IDs.
+3. Confirm status mapping.
+4. Resolve pending and unknown outcomes.
+5. Confirm timestamp timezone.
+6. Validate currency and decimal precision.
+7. Check billing-to-transaction relationships.
+8. Confirm refunds and reversals.
+9. Verify observation-window completeness.
+10. Compare aggregate values against finance or source-system totals.
+
+Flag material data-quality issues on the dashboard rather than silently excluding them.
+
+## 16. Recommended cohort methodology
+
+For monthly renewal and persistency analysis:
+
+1. Identify each Billing ID's first observed month in the available dataset.
+2. Assign the Billing ID to that month’s cohort.
+3. Track subsequent billing periods using the agreed subscriber, policy, or subscription key.
+4. Classify each cohort member as continued, upgraded, downgraded, unchanged, overdue, lapsed, cancelled, or unknown.
+5. Measure each cohort only after its observation period is sufficiently mature.
+6. Show reinstatements separately from uninterrupted continuation.
+7. Explain missing historical data and incomplete future periods.
+
+**Important:** Billing ID is suitable for defining a first-observed billing cohort. Renewal tracking may require a separate stable subscriber, policy, or subscription identifier because each billing cycle can generate a new Billing ID.
+
+## 17. KPI governance and ownership
+
+| Function | Proposed accountability |
+|---|---|
+| Product | Business definition and product outcome |
+| Data / Analytics | Data model, calculation, cohort methodology |
+| Engineering | Event integrity, identifiers, technical telemetry |
+| Operations | Daily monitoring and exception action |
+| Finance | Settlement, fees, reconciliation, accounting interpretation |
+| Merchant Success / Business | Merchant-specific rules and commercial interpretation |
+| Risk / Compliance | Applicable risk and compliance definitions |
+
+These are proposed functional responsibilities. Confirm actual DOKU team ownership and approval authority before operational rollout.
+
+## 18. KPI adoption checklist
+
+Before a KPI becomes an official management metric, confirm:
+
+- [ ] Definition and business purpose approved.
+- [ ] Measurement grain documented.
+- [ ] Numerator and denominator validated.
+- [ ] Pending and unknown treatment agreed.
+- [ ] Observation window defined.
+- [ ] Currency and attribution date confirmed.
+- [ ] Source and data owner identified.
+- [ ] ID and MY applicability validated separately.
+- [ ] Historical calculation tested.
+- [ ] Dashboard label and limitations documented.
+
+---
+
+## 19. Final measurement principles
+
+1. Payment attempt success is not billing collection success.
+2. Billing value due is not collected value.
+3. Failed billing exposure is not automatically lost revenue.
+4. Recovery rate requires a mature and consistently defined failed-billing cohort.
+5. Active subscribers require explicit state rules.
+6. Renewal, persistency, lapse, and churn are related but distinct measures.
+7. Settlement is not the same as payment success.
+8. API acceptance is not proof of business completion.
+9. Webhook delivery is not proof of successful event processing.
+10. IDR and MYR must not be combined without an approved FX methodology.
+
+**The objective is not to maximize the number of KPIs. It is to make every reported number explainable, reproducible, and actionable.**
