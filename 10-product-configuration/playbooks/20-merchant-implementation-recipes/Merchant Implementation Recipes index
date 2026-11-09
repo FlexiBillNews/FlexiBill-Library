@@ -1,0 +1,188 @@
+# FlexiBill Merchant Implementation Recipes
+
+> Practical implementation blueprints for applying FlexiBill to different merchant business models.
+
+## 1. Purpose
+
+This directory translates FlexiBill capabilities into practical merchant implementation patterns.
+
+It helps Product, Sales, Business Development, Solution Engineering, Implementation, Operations, and Support teams understand:
+
+- How a merchant business model can use FlexiBill.
+- Which billing components and configuration patterns may be relevant.
+- How merchants, customers, payers, subscriptions, and payment obligations interact.
+- Which responsibilities remain with the merchant's own systems.
+- What must be validated before proposing or implementing a solution.
+- How to test, launch, monitor, and improve a merchant implementation.
+
+**Important:** These recipes are reference designs, not guarantees that every described capability is natively available in every FlexiBill configuration, country, or integration model.
+
+## 2. Recipe Directory
+
+| # | Recipe | Primary business problem |
+|---|---|---|
+| 01 | [Fitness & Gym Membership](01-fitness-gym-membership.md) | Recurring membership fees, renewals, member billing, and payment recovery |
+| 02 | [Insurance Premium Collection](02-insurance-premium-collection.md) | Premium collection, renewal, grace periods, persistency, and recovery |
+| 03 | [Education & School Fees](03-education-and-school-fees.md) | Tuition, registration, semester fees, guardian payments, and overdue collection |
+| 04 | [SaaS & Digital Subscription](04-saas-and-digital-subscription.md) | Recurring software plans, subscription lifecycle, and digital-service payments |
+| 05 | [Travel & Hospitality](05-travel-and-hospitality.md) | Booking-related payments, recurring services, and scheduled collection |
+| 06 | [Corporate & B2B Billing](06-corporate-and-b2b-billing.md) | Account-based billing, corporate obligations, and periodic collection |
+| 07 | [Community & Membership](07-community-and-membership.md) | Association dues, community membership, and member-based collection |
+| 08 | [Merchant Migration](08-merchant-migration.md) | Moving merchants from existing recurring billing solutions to FlexiBill |
+
+## 3. How to Use These Recipes
+
+### Step 1 — Identify the merchant's business model
+
+Start with the closest matching recipe. A merchant may require more than one pattern.
+
+For example:
+- A fitness chain may combine membership billing with corporate account billing.
+- An education platform may combine student-level obligations with recurring digital subscriptions.
+- An insurer may need premium collection alongside a separate bancassurance distribution model.
+
+### Step 2 — Understand the billing obligation
+
+Clarify what the customer is expected to pay:
+
+- Who owns the customer or member record?
+- Who is contractually responsible for payment?
+- What triggers a billing obligation?
+- Is the amount fixed, variable, or usage-based?
+- Is the payment one-time, recurring, installment-based, or event-driven?
+- What happens when payment fails?
+- What determines whether the underlying service remains active?
+
+Do not assume that the person receiving a bill is always the payer or the service beneficiary.
+
+### Step 3 — Select the appropriate FlexiBill implementation model
+
+Evaluate the available implementation patterns:
+
+| Model | General approach | Key consideration |
+|---|---|---|
+| Billing Automation | Use DOKU-hosted billing and subscription workflows where supported | Confirm configuration and operational fit |
+| API / H2H | Merchant integrates billing and payment workflows through supported APIs and webhooks | Confirm API coverage, integration ownership, and event handling |
+| Hybrid | Combine merchant-owned business logic with FlexiBill billing and payment capabilities | Define clear system boundaries |
+| Merchant Hosted Scheduler | Merchant controls scheduling and initiates supported payment workflows | Validate merchant eligibility, country, and integration requirements |
+
+The correct model depends on the merchant's operating model, technical maturity, customer experience requirements, and country-specific availability.
+
+### Step 4 — Define system ownership
+
+Every implementation should identify the authoritative system for:
+
+- Customer and member identity.
+- Contract, policy, booking, student, or account records.
+- Pricing and amount calculation.
+- Billing schedule and payment obligation.
+- Payment authorization and collection.
+- Payment status and reconciliation.
+- Service entitlement and fulfillment.
+- Refund, cancellation, and dispute handling.
+
+FlexiBill should not be assumed to replace the merchant's ERP, CRM, policy administration, booking engine, student information system, or entitlement platform.
+
+### Step 5 — Validate before committing to a solution
+
+Use the relevant recipe's validation checklist and test scenarios.
+
+Confirm:
+- Required capabilities are available for the intended country and merchant setup.
+- API, webhook, dashboard, and customer-facing interfaces support the proposed journey.
+- Payment methods and authorization requirements are understood.
+- Failure, retry, overdue, cancellation, and refund scenarios are defined.
+- Reporting and reconciliation meet merchant requirements.
+- External system dependencies have named owners.
+
+## 4. Capability Status and Evidence Rules
+
+Use the following labels consistently across internal proposals and implementation documents.
+
+| Label | Meaning | How to communicate |
+|---|---|---|
+| Available | Confirmed capability for the stated product scope | May be described as available within that scope |
+| Conditional | Capability depends on configuration, integration, eligibility, or setup | Explain the condition |
+| Validation required | Not sufficiently confirmed for the proposed use case | Verify with Product, Engineering, or the relevant country team |
+| Gap | Requirement is not currently supported in the confirmed scope | Do not position as available |
+| Future / Strategic | Direction or concept for potential development | Present as roadmap or strategic intent, not a current feature |
+
+A feature available in one country, integration model, or merchant configuration must not automatically be represented as available in another.
+
+## 5. Indonesia and Malaysia Considerations
+
+Every merchant implementation must include a country validation step.
+
+Do not assume Indonesia and Malaysia have identical:
+
+- Payment method availability.
+- Merchant eligibility and onboarding requirements.
+- Recurring payment authorization flows.
+- API and webhook coverage.
+- Dashboard and customer-facing functionality.
+- Settlement, reconciliation, and reporting behavior.
+- Operational processes and support arrangements.
+
+The implementation owner should record country-specific findings before solution sign-off.
+
+## 6. Important Product Boundaries
+
+The recipes may describe merchant experiences that require capabilities outside FlexiBill.
+
+Examples include:
+
+- Native real-time usage metering and aggregation.
+- Product entitlement and access control.
+- Merchant-owned pricing and complex amount calculation.
+- Multi-product and add-on management.
+- Customer or account hierarchy.
+- Consolidated invoicing across multiple obligations.
+- Advanced plan-change, proration, pause, and resume workflows.
+- Global tax and multi-currency requirements.
+- Revenue recognition and accounting treatment.
+
+These must be assessed as merchant-system responsibilities, integration requirements, product gaps, or future opportunities as appropriate.
+
+Do not imply that a payment success event automatically activates a service, reinstates an insurance policy, confirms a booking, or changes a customer's contractual status. Those business decisions belong to the relevant merchant system and business rules.
+
+## 7. Relationship to Other Playbooks
+
+This directory should be used together with the product configuration documentation:
+
+`playbooks/10-product-configuration/`
+
+Recommended reading sequence:
+
+1. **Product foundation:** Understand FlexiBill's product positioning and billing fundamentals.
+2. **Configuration:** Understand Collection, Plan, Pricing Table, Member Center, Billing Portal, Account Billing, subscription lifecycle, and payment management.
+3. **Merchant recipe:** Apply the relevant business-model blueprint.
+4. **Solution validation:** Confirm product availability, technical dependencies, country scope, and operational ownership.
+5. **Implementation and testing:** Execute the merchant-specific integration and launch plan.
+
+The configuration playbooks explain the product building blocks. The merchant recipes explain how those building blocks may be assembled into business solutions.
+
+## 8. Ownership and Maintenance
+
+| Responsibility | Expected contribution |
+|---|---|
+| Product | Validate product capability, limitations, and roadmap alignment |
+| Engineering / Solution Engineering | Validate API, integration, architecture, and technical feasibility |
+| Business Development / Sales | Validate merchant needs, commercial model, and business assumptions |
+| Implementation | Convert the recipe into a merchant-specific delivery plan |
+| Operations / Support | Validate monitoring, reconciliation, exception handling, and support readiness |
+| Country team | Confirm local payment, regulatory, operational, and market requirements |
+
+Update a recipe when:
+- Product capabilities or API behavior materially change.
+- Country availability changes.
+- A new implementation pattern is validated.
+- Merchant feedback identifies a recurring implementation issue.
+- A known limitation or dependency is resolved.
+
+Every material update should include the date, owner, scope, and source of validation.
+
+---
+
+**FlexiBill Merchant Implementation Recipes**
+
+*One product foundation. Multiple merchant business models. Clear ownership from billing configuration to successful payment and service delivery.*
