@@ -1,1 +1,719 @@
+# SaaS & Digital Subscription — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-004  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Operations  
+**Status:** Reference solution — validate current product capabilities, integration scope, and country eligibility before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+A Software-as-a-Service (SaaS) or digital platform business wants to monetize its services through recurring subscriptions.
+
+Typical examples include:
+
+- Business software.
+- Accounting and invoicing platforms.
+- CRM and sales tools.
+- HR and payroll software.
+- Productivity applications.
+- Cloud services.
+- Digital learning platforms.
+- Online content and membership services.
+- API and developer platforms.
+
+The merchant needs to:
+
+- Offer multiple subscription packages.
+- Support monthly and annual billing.
+- Acquire customers through digital checkout.
+- Manage recurring payments.
+- Offer trials and promotions.
+- Support plan upgrades and downgrades.
+- Handle failed payment and recovery.
+- Monitor subscription status and churn.
+- Connect payment status with product access and entitlements.
+
+### Proposed solution
+
+Use FlexiBill as the billing and payment orchestration layer, while the merchant's SaaS platform remains responsible for user accounts, service access, product entitlements, and usage-based business logic unless an explicitly validated integration provides those functions.
+
+The core design principle is:
+
+**Subscription billing and digital-service entitlement are connected processes, but they are not the same thing.**
+
+A successful payment does not automatically provision a SaaS account unless the merchant has implemented the required integration.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Merchant:** CloudWorks  
+**Business:** B2B SaaS platform  
+**Customers:** SMEs, startups, and enterprise organizations  
+**Commercial model:** Monthly and annual subscriptions, with optional usage charges
+
+### Current business problems
+
+| Problem | Business impact |
+|---|---|
+| Manual recurring invoices | Operational overhead |
+| Disconnected checkout and subscription records | Customer onboarding friction |
+| Failed recurring payments | Revenue leakage |
+| Manual plan changes | Slow customer servicing |
+| Limited trial conversion tracking | Lost acquisition opportunity |
+| Payment and entitlement status disconnected | Incorrect service access |
+| Poor churn visibility | Revenue uncertainty |
+
+### Desired outcomes
+
+1. Simplify subscription acquisition.
+2. Automate recurring billing and collection where supported.
+3. Reduce failed-payment leakage.
+4. Improve trial-to-paid conversion.
+5. Support commercial plan changes.
+6. Improve subscription and revenue visibility.
+7. Connect payment events with SaaS account access.
+
+## 3. SaaS commercial model
+
+### Example subscription catalogue
+
+All prices are illustrative.
+
+| Package | Monthly price | Annual price | Target segment |
+|---|---:|---:|---|
+| Starter | Rp99,000 | Rp990,000 | Individual users |
+| Growth | Rp299,000 | Rp2,990,000 | Small businesses |
+| Business | Rp799,000 | Rp7,990,000 | Growing companies |
+| Enterprise | Negotiated | Negotiated | Larger organizations |
+
+### Additional commercial components
+
+- Free trials.
+- Paid trials.
+- Setup fees.
+- Additional user seats.
+- Premium features.
+- Storage allowances.
+- API call allowances.
+- Additional usage charges.
+- Discounts and coupons.
+- Annual commitment incentives.
+
+Not every component should be assumed to be part of one native subscription. Validate the required pricing model and any external calculation or billing integration.
+
+## 4. Core SaaS data model
+
+### Business objects
+
+| Object | Meaning | Example |
+|---|---|---|
+| User | Individual SaaS user | User ID |
+| Organization | Customer company or account | Organization ID |
+| Subscription | Commercial agreement | Subscription ID |
+| Plan | Product package | Growth |
+| Pricing | Amount and billing terms | Rp299,000/month |
+| Billing obligation | Amount due for a billing period | Billing ID |
+| Payment transaction | Individual payment attempt | Transaction ID |
+| Entitlement | Permission to use a product or feature | Feature access |
+| Usage record | Measured customer activity | API calls |
+
+### Recommended relationship
+
+```text id="s8m3pq"
+        CUSTOMER ORGANIZATION
+                 |
+          +------+------+
+          |             |
+          v             v
+        USERS        SUBSCRIPTION
+                         |
+                         v
+                       PLAN
+                         |
+                         v
+                      PRICING
+                         |
+                         v
+                 BILLING OBLIGATION
+                         |
+                         v
+                 PAYMENT COLLECTION
+                         |
+                         v
+                 PAYMENT RESULT
+                         |
+                         v
+                MERCHANT SAAS SYSTEM
+                         |
+                         v
+                 ACCOUNT ENTITLEMENT
+```
+
+The SaaS platform should own the relationship between payment status and service entitlements.
+
+Do not use the payment transaction as the subscription identity.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text id="w2x9ka"
+          SAAS WEBSITE / APP
+                  |
+                  v
+           PRICING TABLE
+                  |
+                  v
+           CUSTOMER CHECKOUT
+                  |
+                  v
+           CUSTOMER IDENTITY
+                  |
+                  v
+          SUBSCRIPTION SETUP
+                  |
+                  v
+             FLEXIBILL
+          Collection / Plan /
+              Pricing
+                  |
+                  v
+          BILLING ORCHESTRATION
+                  |
+                  v
+          PAYMENT COLLECTION
+                  |
+            +-----+-----+
+            |           |
+            v           v
+         SUCCESS      FAILURE
+            |           |
+            v           v
+      PAYMENT EVENT   RECOVERY
+            |           |
+            +-----+-----+
+                  |
+                  v
+           SAAS BACKEND
+                  |
+                  v
+       ENTITLEMENT / ACCESS CONTROL
+                  |
+                  v
+           CUSTOMER DASHBOARD
+```
+
+### System responsibility
+
+| Responsibility | Primary owner |
+|---|---|
+| Customer and organization identity | SaaS platform |
+| User permissions | SaaS platform |
+| Plan catalogue | Merchant, configured in agreed system |
+| Commercial subscription | FlexiBill and/or merchant integration |
+| Usage measurement | SaaS platform |
+| Usage calculation | SaaS platform unless separately implemented |
+| Billing obligation | Agreed billing owner |
+| Payment collection | DOKU payment infrastructure |
+| Payment result | DOKU and merchant integration |
+| Product entitlement | SaaS platform |
+| Churn and product analytics | SaaS platform and agreed reporting |
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Design the subscription catalogue
+
+Example:
+
+| Plan | Pricing model | Frequency | Example |
+|---|---|---|---:|
+| Starter | Flat Fee | Monthly | Rp99,000 |
+| Growth | Flat Fee | Monthly | Rp299,000 |
+| Business | Flat Fee | Monthly | Rp799,000 |
+| Enterprise | Contract-defined | Contract-defined | Negotiated |
+
+Choose the appropriate pricing model supported by the current FlexiBill configuration.
+
+### Step 2 — Configure Collection structure
+
+Possible structures:
+
+| Collection | Purpose |
+|---|---|
+| Self-Service Customers | Customers acquired online |
+| SME Customers | Small-business segment |
+| Enterprise Customers | Contracted organizations |
+| Partner Customers | Partner-originated subscriptions |
+| Annual Subscribers | Annual commercial segment |
+
+Avoid duplicating Collections solely to represent dimensions that can be managed by merchant-side reporting.
+
+### Step 3 — Configure Plans and Pricing
+
+Define:
+
+- Package name.
+- Price.
+- Billing frequency.
+- Billing start date.
+- Duration or end condition.
+- Number of charges, where applicable.
+- Discount or coupon rules.
+- Applicable customer segment.
+- Tax treatment, where supported.
+
+Validate the exact configuration behavior before committing to a customer-facing commercial design.
+
+### Step 4 — Configure trial strategy
+
+Illustrative trial designs:
+
+| Trial model | Commercial design |
+|---|---|
+| Free trial | Seven days at no charge |
+| Limited trial | Free access to selected features |
+| Paid trial | Discounted initial billing period |
+| Trial with card authorization | Customer provides eligible payment method before trial |
+| Trial without payment method | Customer upgrades through a later checkout journey |
+
+For each model, define:
+
+- Trial start and end.
+- Whether payment authorization is required.
+- Whether a payment method must be saved.
+- First paid billing date.
+- Customer notification.
+- Cancellation before conversion.
+- What happens when the trial expires.
+
+Do not assume that every trial design is natively supported. Validate the configuration or implement trial control in the merchant's SaaS platform.
+
+### Step 5 — Publish Pricing Table
+
+The Pricing Table can be used to present packages and support digital acquisition where the required journey is supported.
+
+Potential placements:
+
+- Website.
+- Product landing page.
+- Email campaign.
+- Social media.
+- Partner landing page.
+- QR code.
+- Supported embedded checkout.
+
+Validate whether the selected customer journey can create the required subscription and payment authorization.
+
+### Step 6 — Establish customer identity
+
+Recommended fields:
+
+| Field | Purpose |
+|---|---|
+| Organization ID | Customer organization |
+| User ID | Individual user |
+| Email | Customer communication |
+| Subscription ID | Commercial relationship |
+| Plan ID | Selected package |
+| Customer reference | Billing correlation |
+| Payment reference | Transaction correlation |
+
+For B2B SaaS, establish whether the subscription belongs to an organization rather than an individual user.
+
+### Step 7 — Establish subscription and payment flow
+
+Confirm:
+
+- Subscription creation method.
+- First billing behavior.
+- Recurring schedule.
+- Payment-method eligibility.
+- Customer authorization.
+- Billing event notifications.
+- Payment result handling.
+- Subscription status synchronization.
+
+The merchant should use a stable subscription reference to associate recurring obligations with the correct organization.
+
+## 7. End-to-end customer journey
+
+### Journey A — New subscription
+
+```text id="f4n8qs"
+CUSTOMER VISITS SAAS WEBSITE
+             |
+             v
+        SELECTS PLAN
+             |
+             v
+       CREATES ACCOUNT
+             |
+             v
+       STARTS CHECKOUT
+             |
+             v
+   PAYMENT / AUTHORIZATION
+             |
+             v
+     SUBSCRIPTION CREATED
+             |
+             v
+      SAAS BACKEND VALIDATES
+             |
+             v
+       ENTITLEMENT ACTIVATED
+             |
+             v
+       CUSTOMER USES SERVICE
+```
+
+The merchant defines whether service access begins after account registration, trial activation, successful payment, or another approved event.
+
+### Journey B — Trial to paid subscription
+
+```text id="c3m7vx"
+        TRIAL STARTS
+             |
+             v
+       CUSTOMER USES SAAS
+             |
+             v
+       TRIAL END APPROACHES
+             |
+             v
+       CUSTOMER NOTIFIED
+             |
+             v
+      PAID CONVERSION EVENT
+             |
+             v
+       PAYMENT COLLECTION
+             |
+         +---+---+
+         |       |
+         v       v
+      SUCCESS  FAILURE
+         |       |
+         v       v
+    PAID ACCESS RECOVERY /
+    CONTINUES  CUSTOMER ACTION
+```
+
+The trial conversion and first paid billing must be tested together. Do not assume a trial automatically converts into a paid subscription unless the configured product and authorization flow support it.
+
+### Journey C — Recurring subscription
+
+1. Billing date arrives.
+2. The billing obligation is generated according to the agreed model.
+3. Payment collection is initiated.
+4. Payment result is received.
+5. Merchant backend processes the result.
+6. Billing and subscription records are updated.
+7. SaaS entitlement follows the merchant's approved policy.
+
+## 8. Upgrade, downgrade, and plan changes
+
+Plan changes are important to SaaS revenue expansion and retention.
+
+### Example commercial scenario
+
+A customer moves from Growth to Business.
+
+| Item | Growth | Business |
+|---|---:|---:|
+| Monthly fee | Rp299,000 | Rp799,000 |
+| Change | — | Upgrade |
+| Difference | — | Rp500,000 |
+
+### Decisions required
+
+- Does the new price take effect immediately or next cycle?
+- Is the price difference prorated?
+- Is an immediate additional charge required?
+- Does the customer need to authorize another payment?
+- Are existing billing obligations affected?
+- Does the new plan activate immediately?
+- How are downgrades handled?
+- What happens to unused services or allowances?
+
+### Capability status
+
+| Requirement | Status |
+|---|---|
+| Separate Plans and Pricing | Configuration capability; validate exact behavior |
+| Commercial plan-change policy | Merchant-defined |
+| Native plan-change API | Validate; do not assume availability |
+| Automatic proration | Validate; do not assume availability |
+| Entitlement update | Merchant-side integration unless confirmed otherwise |
+| Historical billing preservation | Define and test |
+
+A merchant can implement plan changes in its own application while coordinating the resulting billing configuration and payment obligations with FlexiBill.
+
+## 9. Failed payment and churn prevention
+
+### Typical failure scenarios
+
+| Scenario | Recommended action |
+|---|---|
+| Insufficient funds | Notify customer and follow permitted recovery policy |
+| Expired payment credential | Request payment-method update |
+| Bank or issuer decline | Explain the next action |
+| Authorization issue | Guide customer through an eligible authorization flow |
+| Technical failure | Investigate before retry |
+| Customer intentionally cancels | Apply cancellation policy |
+| Subscription and payment status mismatch | Reconcile before entitlement changes |
+
+### Recovery journey
+
+```text id="b6x2mt"
+       RECURRING BILLING
+              |
+              v
+       PAYMENT FAILURE
+              |
+              v
+       FAILURE CLASSIFIED
+              |
+              v
+      CUSTOMER NOTIFICATION
+              |
+              v
+       RECOVERY OPPORTUNITY
+              |
+        +-----+-----+
+        |           |
+        v           v
+    PAYMENT      NO PAYMENT
+    SUCCESS        |
+        |          v
+        v      MERCHANT POLICY
+    RESTORE /       |
+    MAINTAIN        v
+    ENTITLEMENT  RESTRICT / CANCEL
+                 AS APPROVED
+```
+
+The SaaS merchant owns the decision to maintain, restrict, or terminate service access. FlexiBill payment status alone should not be treated as the complete entitlement decision.
+
+## 10. Customer self-service
+
+### Billing Portal and merchant application
+
+| Customer action | Potential interface | Validation |
+|---|---|---|
+| View package | Merchant app / Billing Portal | Confirm available display |
+| View billing status | Billing Portal | Confirm scope |
+| View payment information | Billing Portal | Confirm supported fields |
+| Update payment method | Supported payment journey | Confirm eligibility |
+| Upgrade plan | Merchant app + billing integration | Validate plan-change capability |
+| Downgrade plan | Merchant app + billing integration | Validate effective-date behavior |
+| Cancel subscription | Merchant app / supported workflow | Confirm cancellation behavior |
+| Pause subscription | Merchant app / supported workflow | Validate availability |
+| Resume subscription | Merchant app / supported workflow | Validate availability |
+
+Do not promise that Billing Portal natively supports every subscription-management action.
+
+## 11. Usage-based and hybrid SaaS billing
+
+Some SaaS merchants combine a recurring base fee with usage charges.
+
+Illustrative example:
+
+| Component | Example |
+|---|---:|
+| Monthly platform fee | Rp299,000 |
+| Included API calls | 10,000 |
+| Additional API calls | Merchant-defined |
+| Storage overage | Merchant-defined |
+| Premium support | Rp100,000 |
+
+The SaaS platform should measure and calculate actual usage unless a separate metering and aggregation capability has been implemented and validated.
+
+### Capability distinction
+
+| Capability | Internal position |
+|---|---|
+| Flat recurring subscription | Supported configuration model subject to validation |
+| Per-unit pricing | Pricing model available; validate calculation requirements |
+| Tiered / volume / stairstep pricing | Pricing models available; validate exact commercial calculation |
+| Native real-time metering | Gap / future direction |
+| Usage aggregation | Merchant-side or integration requirement |
+| Automated usage-to-invoice workflow | Requires end-to-end validation |
+| Entitlement management | Merchant-side responsibility unless separately integrated |
+
+Do not describe FlexiBill as a complete usage-based billing platform without confirming metering, aggregation, and calculation responsibilities.
+
+## 12. Merchant operational dashboard
+
+| Dashboard | Key information |
+|---|---|
+| Subscription overview | Active, trial, cancelled, expired |
+| New subscription | New customers and conversion |
+| Plan performance | Subscribers and revenue by package |
+| Trial conversion | Trials reaching paid status |
+| Recurring collection | Due, successful, failed |
+| Recovery | Recovered and unrecovered billing |
+| Churn | Voluntary and involuntary churn |
+| Expansion | Upgrade and additional revenue |
+| Payment methods | Performance by payment method |
+| Organization view | B2B subscription and billing relationships |
+
+Confirm which reports are available natively and which require merchant-side analytics.
+
+## 13. Merchant value proposition
+
+| Value dimension | Potential benefit |
+|---|---|
+| Acquisition | Structured digital subscription offers |
+| Revenue | More consistent recurring collection |
+| Conversion | Better trial-to-paid visibility |
+| Expansion | More structured package management |
+| Retention | Improved failure and churn monitoring |
+| Operations | Reduced manual billing administration |
+| Customer experience | Clearer subscription and billing journey |
+| Scalability | Repeatable subscription configuration |
+
+These are intended outcomes, not guaranteed improvements.
+
+## 14. Indonesia and Malaysia considerations
+
+Validate each market independently.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Confirm eligibility | Confirm eligibility |
+| Collection and Plan setup | Validate current configuration | Validate current configuration |
+| Pricing Table | Validate journey | Validate journey |
+| Member Center | Validate identity workflow | Validate identity workflow |
+| Billing Portal | Confirm supported functions | Confirm supported functions |
+| Recurring card | Confirm eligibility and authorization | Confirm eligibility and authorization |
+| Bank-based auto-debit | Confirm channels | Confirm channels |
+| API / H2H | Confirm integration scope | Confirm integration scope |
+| Payment notifications | Confirm channels | Confirm channels |
+| Currency and tax | Confirm local requirements | Confirm local requirements |
+| Reporting | Confirm fields and exports | Confirm fields and exports |
+
+Do not assume that payment-method availability or customer-interface behavior is identical across ID and MY.
+
+## 15. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| SaaS-001 | Create Collection | Correct customer grouping |
+| SaaS-002 | Configure Plan | Correct package definition |
+| SaaS-003 | Configure monthly Pricing | Correct amount and frequency |
+| SaaS-004 | Publish Pricing Table | Correct offer and checkout journey |
+| SaaS-005 | Register customer | Correct identity mapping |
+| SaaS-006 | Create subscription | Correct Plan and customer reference |
+| SaaS-007 | Start trial | Correct trial start and end |
+| SaaS-008 | Convert trial | Correct first paid billing |
+| SaaS-009 | Successful recurring payment | Correct billing and payment status |
+| SaaS-010 | Failed recurring payment | Correct failure handling |
+| SaaS-011 | Payment recovery | Correct original obligation mapping |
+| SaaS-012 | Upgrade plan | Correct commercial and billing outcome |
+| SaaS-013 | Downgrade plan | Correct effective date |
+| SaaS-014 | Cancel subscription | No unintended future billing |
+| SaaS-015 | Payment-method update | Correct customer and subscription mapping |
+| SaaS-016 | Duplicate webhook | No duplicate entitlement or billing action |
+| SaaS-017 | Reconciliation | Merchant and DOKU references match |
+
+## 16. Go-live checklist
+
+### Commercial
+- [ ] Subscription packages approved.
+- [ ] Monthly and annual pricing approved.
+- [ ] Trial policy approved.
+- [ ] Upgrade and downgrade rules documented.
+- [ ] Cancellation and renewal policies approved.
+
+### Product and integration
+- [ ] Collection and Plan structure validated.
+- [ ] Pricing configuration tested.
+- [ ] Pricing Table journey tested.
+- [ ] Customer identity mapping confirmed.
+- [ ] Subscription creation method confirmed.
+- [ ] API and webhook integration tested.
+- [ ] Entitlement ownership documented.
+
+### Payment
+- [ ] Eligible recurring payment methods confirmed.
+- [ ] Customer authorization tested.
+- [ ] First and recurring collections tested.
+- [ ] Failed-payment recovery tested.
+- [ ] Payment-method update journey tested.
+
+### Operations
+- [ ] Trial conversion reporting validated.
+- [ ] Subscription status mapping validated.
+- [ ] Churn definitions approved.
+- [ ] Billing reconciliation tested.
+- [ ] Customer support ownership assigned.
+- [ ] Country-specific readiness approved.
+
+## 17. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Native plan-change API | Easier subscription changes | Gap / validation required |
+| Automatic proration | More flexible commercial changes | Validate; do not assume |
+| Multi-product and add-ons | Bundle subscription components | Gap / strategic direction |
+| Native metering | Usage-based SaaS billing | Gap / future direction |
+| Real-time usage aggregation | Accurate usage calculation | Gap / future direction |
+| Entitlement orchestration | Connect billing and product access | Merchant integration / strategic opportunity |
+| Advanced churn prediction | Identify customers at risk | Analytics opportunity |
+| Dunning optimization | Improve failed-payment recovery | Validate current capabilities |
+| Organization hierarchy | Support complex B2B accounts | Data-model validation |
+| Consolidated invoicing | Combine multiple commercial obligations | Gap / strategic direction |
+
+## 18. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Acquisition | New paid subscriptions |
+| Conversion | Trial-to-paid conversion rate |
+| Recurring revenue | Monthly recurring revenue (MRR) |
+| Revenue quality | Recurring collection success rate |
+| Recovery | Failed-payment recovery rate |
+| Retention | Logo churn and subscription churn |
+| Expansion | Upgrade rate and expansion revenue |
+| Customer experience | Billing-related support contacts |
+| Operations | Manual billing effort and reconciliation exceptions |
+
+Define MRR, annual contract value, churn, trial conversion, and paid subscriber rules consistently before reporting.
+
+## 19. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 20. Governance
+
+This is a reusable reference solution for SaaS and digital subscription merchants.
+
+Before reusing it:
+1. Validate current FlexiBill capabilities.
+2. Define subscription and billing ownership.
+3. Confirm payment-method eligibility and authorization.
+4. Separate billing status from product entitlement.
+5. Validate trial, plan-change, and cancellation behavior.
+6. Confirm usage calculation responsibility.
+7. Validate country-specific requirements.
+8. Obtain merchant, DOKU Product, Engineering, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-004  
+**Review trigger:** Product release, payment-channel change, SaaS integration change, country expansion, or material implementation finding.
