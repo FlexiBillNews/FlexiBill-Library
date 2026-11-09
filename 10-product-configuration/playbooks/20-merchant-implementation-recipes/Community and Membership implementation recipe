@@ -1,1 +1,759 @@
+# Community & Membership — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-007  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Operations  
+**Status:** Reference solution — validate current FlexiBill capabilities, payment-method eligibility, membership registration, and country requirements before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+A community-based organization needs to register members, collect membership dues or contributions, and maintain visibility over member payment status.
+
+Potential merchant segments include:
+
+- Cooperatives and cooperative networks.
+- Professional associations.
+- Sports and social clubs.
+- Alumni associations.
+- Religious or community organizations.
+- Membership-based businesses.
+- Trade and industry associations.
+- Local community groups.
+- Agent and member networks.
+- Microfinance and community-based organizations.
+
+### Merchant challenges
+
+| Problem | Business impact |
+|---|---|
+| Manual membership fee collection | Administrative workload |
+| Inconsistent member records | Difficult member tracking |
+| Different membership tiers | Complex fee management |
+| Missed recurring contributions | Revenue leakage |
+| Manual payment confirmation | Reconciliation delays |
+| Members use different payment channels | Fragmented payment visibility |
+| Expired membership | Member-service disruption |
+| Multiple branches or chapters | Distributed administration |
+
+### Proposed solution
+
+Use FlexiBill to support agreed membership billing and payment collection workflows.
+
+The community or membership organization remains responsible for:
+
+- Member registration and verification.
+- Membership eligibility.
+- Member identity and organizational records.
+- Membership rights and privileges.
+- Governance and membership rules.
+- Community activities.
+- Member suspension and reinstatement decisions.
+
+FlexiBill supports billing configuration and payment collection within the validated product and integration scope.
+
+**Core principle:** Payment status can support membership administration, but successful payment does not automatically determine membership eligibility or grant access to member benefits.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Organization:** CommunityPlus Association  
+**Business:** Membership-based professional community  
+**Members:** Individual members, corporate members, and community partners  
+**Commercial model:** Registration fee + annual membership dues + optional activities
+
+### Illustrative membership structure
+
+| Membership tier | Registration fee | Annual dues |
+|---|---:|---:|
+| Individual | Rp100,000 | Rp300,000 |
+| Professional | Rp150,000 | Rp600,000 |
+| Corporate | Rp500,000 | Rp2,500,000 |
+| Student | Rp50,000 | Rp150,000 |
+
+All values are illustrative and should be replaced with the organization's approved pricing.
+
+## 3. Membership billing models
+
+### Model A — Registration fee + recurring membership dues
+
+Suitable for an organization with an initial joining fee and recurring membership dues.
+
+```text id="f8p4cz"
+MEMBER REGISTRATION
+        |
+        v
+REGISTRATION FEE
+        |
+        v
+MEMBERSHIP APPROVAL
+        |
+        v
+MEMBERSHIP ACTIVATION
+        |
+        v
+ANNUAL / MONTHLY DUES
+        |
+        v
+PAYMENT COLLECTION
+        |
+        v
+MEMBERSHIP STATUS UPDATE
+```
+
+### Model B — Annual membership renewal
+
+Suitable for associations, clubs, and communities with a fixed annual renewal cycle.
+
+```text id="n1n0xb"
+ACTIVE MEMBER
+      |
+      v
+RENEWAL PERIOD
+      |
+      v
+MEMBERSHIP DUES
+      |
+      v
+PAYMENT REQUEST
+      |
+      v
+PAYMENT CONFIRMED
+      |
+      v
+RENEWAL PROCESSED
+```
+
+The organization defines the membership validity period and renewal rules.
+
+### Model C — Membership tiers
+
+Suitable when members pay different fees based on their category.
+
+Examples:
+
+- Individual.
+- Student.
+- Professional.
+- Corporate.
+- Premium.
+- Lifetime membership.
+
+Use appropriate Collection and Plan structures where supported.
+
+### Model D — Community contributions
+
+Suitable for periodic or one-time contributions.
+
+Examples:
+
+- Community fund contributions.
+- Activity fees.
+- Event participation.
+- Cooperative contributions.
+- Special fundraising obligations.
+
+The organization must distinguish voluntary contributions from contractual or mandatory membership dues.
+
+### Model E — Membership with privileges
+
+Suitable when members receive benefits based on their membership category or payment status.
+
+Examples:
+
+- Member discounts.
+- Priority event access.
+- Training access.
+- Partner offers.
+- Community services.
+
+Benefit eligibility should be managed by the organization's membership or entitlement system unless a specific integration has been validated.
+
+## 4. Core data model
+
+| Object | Meaning | Example |
+|---|---|---|
+| Member | Individual or organization | Member ID |
+| Membership | Relationship between member and organization | Membership ID |
+| Membership tier | Category of membership | Professional |
+| Membership period | Validity period | 2027 |
+| Fee obligation | Amount due | Annual dues |
+| Billing ID | Individual billing reference | BILL-001 |
+| Payment transaction | Collection attempt or result | TXN-001 |
+| Member status | Organization-defined status | Active |
+| Benefit eligibility | Member privileges | Training access |
+
+### Recommended relationship
+
+```text id="o9jph3"
+ORGANIZATION
+      |
+      v
+MEMBER REGISTRATION
+      |
+      v
+MEMBER PROFILE
+      |
+      v
+MEMBERSHIP CATEGORY
+      |
+      v
+MEMBERSHIP PERIOD
+      |
+      v
+FEE OBLIGATION
+      |
+      v
+PAYMENT COLLECTION
+      |
+      v
+PAYMENT RESULT
+      |
+      v
+MEMBERSHIP SYSTEM
+      |
+      +-------------------+
+      |                   |
+      v                   v
+MEMBER STATUS       BENEFIT ELIGIBILITY
+```
+
+The organization's membership system remains the source of truth for member status and benefits.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text id="8p8txd"
+       COMMUNITY WEBSITE / APP
+                 |
+                 v
+        MEMBER REGISTRATION
+                 |
+                 v
+       MEMBERSHIP MANAGEMENT
+                 |
+                 v
+        MEMBERSHIP CATEGORY
+                 |
+                 v
+        BILLING CONFIGURATION
+                 |
+                 v
+              FLEXIBILL
+      Collection / Plan / Pricing
+                 |
+                 v
+         BILLING OBLIGATION
+                 |
+                 v
+          PAYMENT COLLECTION
+                 |
+            +----+----+
+            |         |
+            v         v
+         SUCCESS    FAILURE
+            |         |
+            v         v
+      PAYMENT RESULT / RECOVERY
+            |
+            v
+       API / WEBHOOK / EXPORT
+            |
+            v
+       MEMBERSHIP SYSTEM
+            |
+            v
+     MEMBER STATUS / BENEFITS
+```
+
+### System responsibility
+
+| Responsibility | Primary owner |
+|---|---|
+| Member registration | Organization |
+| Member identity verification | Organization |
+| Membership approval | Organization |
+| Membership categories | Organization |
+| Membership pricing | Organization |
+| Billing configuration | FlexiBill, within validated scope |
+| Payment collection | DOKU payment infrastructure |
+| Payment result | DOKU and integrated systems |
+| Membership status | Organization |
+| Benefit entitlement | Organization or integrated system |
+| Member communication | Agreed merchant and platform workflow |
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Define membership categories
+
+Illustrative categories:
+
+| Category | Member type | Billing cycle |
+|---|---|---|
+| Individual | Person | Annual |
+| Professional | Person | Annual |
+| Student | Person | Annual |
+| Corporate | Organization | Annual |
+| Community Partner | Organization | Contract-defined |
+
+### Step 2 — Define Collection structure
+
+Possible Collections:
+
+- Individual Membership.
+- Professional Membership.
+- Student Membership.
+- Corporate Membership.
+- Community Contributions.
+- Event and Activity Fees.
+
+The structure should align with the organization's reporting and operational needs.
+
+### Step 3 — Define Plans and Pricing
+
+Example:
+
+| Plan | Pricing model | Example |
+|---|---|---:|
+| Individual Annual | Flat Fee | Rp300,000 |
+| Professional Annual | Flat Fee | Rp600,000 |
+| Student Annual | Flat Fee | Rp150,000 |
+| Corporate Annual | Flat Fee | Rp2,500,000 |
+| Event Contribution | Open Amount, if appropriate | Merchant-defined |
+
+Pricing and payment rules must be approved by the organization.
+
+### Step 4 — Define the member registration journey
+
+The organization should determine:
+
+- Required member information.
+- Member verification process.
+- Membership approval process.
+- Membership ID generation.
+- Membership category selection.
+- Billing initiation.
+- Payment confirmation.
+- Membership activation.
+
+Do not assume that a FlexiBill payment form automatically provides complete membership onboarding or identity verification.
+
+### Step 5 — Configure Member Center
+
+Evaluate Member Center for the intended member-management journey.
+
+Validate:
+
+- Member registration.
+- Member identity and unique identifiers.
+- Member grouping and labels.
+- Member data import and export.
+- Membership-to-billing mapping.
+- Member-facing registration experience.
+- API availability and frontend readiness.
+
+**Important:** Member Center API readiness and customer-facing registration frontend readiness are separate questions. Confirm the exact implementation scope before promising an end-to-end registration experience.
+
+### Step 6 — Configure recurring dues
+
+Define:
+
+- Monthly or annual billing interval.
+- Membership start date.
+- Renewal date.
+- Number of billing cycles.
+- Membership validity period.
+- Grace and overdue rules.
+- Payment failure handling.
+- Membership expiry and reinstatement rules.
+
+The organization owns the membership rules. Validate which lifecycle actions can be configured natively and which require external orchestration.
+
+### Step 7 — Configure member payment experience
+
+Evaluate:
+
+- Pricing Table for standardized membership offerings.
+- Billing Portal for supported member billing and payment activities.
+- Eligible recurring payment methods.
+- One-time payment methods.
+- Customer notifications.
+- Payment references and reconciliation.
+
+Do not assume every membership or contribution model is suitable for recurring auto-debit.
+
+## 7. End-to-end member journey
+
+### Journey A — New member registration
+
+```text id="0y0iqp"
+VISIT COMMUNITY WEBSITE
+          |
+          v
+   SUBMIT REGISTRATION
+          |
+          v
+  ORGANIZATION VALIDATION
+          |
+          v
+  MEMBERSHIP CATEGORY
+          |
+          v
+   REGISTRATION BILLING
+          |
+          v
+     PAYMENT RESULT
+          |
+          v
+  ORGANIZATION APPROVAL
+          |
+          v
+   MEMBERSHIP ACTIVATION
+```
+
+The organization decides whether payment occurs before or after membership approval.
+
+### Journey B — Membership renewal
+
+```text id="0ddzgm"
+ACTIVE MEMBER
+      |
+      v
+RENEWAL PERIOD
+      |
+      v
+BILLING OBLIGATION
+      |
+      v
+PAYMENT NOTIFICATION
+      |
+      v
+PAYMENT COLLECTION
+      |
+      v
+PAYMENT RESULT
+      |
+      v
+MEMBERSHIP SYSTEM UPDATE
+      |
+      v
+RENEWAL CONFIRMATION
+```
+
+### Journey C — Failed membership payment
+
+1. Membership dues become due.
+2. Payment collection is attempted.
+3. Payment fails or remains pending.
+4. Payment status is synchronized.
+5. Member receives the appropriate notification.
+6. Organization applies its grace and overdue policy.
+7. Member pays or contacts support.
+8. Organization updates membership status according to its rules.
+
+Payment failure should not automatically suspend a member unless the organization's approved policy and integration explicitly require it.
+
+## 8. Member benefits and entitlement management
+
+Membership is more than payment collection.
+
+An organization may provide:
+
+- Discounts.
+- Member-only events.
+- Training and education.
+- Partner offers.
+- Priority services.
+- Community resources.
+- Special pricing.
+- Digital access.
+
+### Recommended entitlement flow
+
+```text id="8w47bs"
+MEMBERSHIP RECORD
+       |
+       v
+MEMBERSHIP STATUS
+       |
+       v
+PAYMENT STATUS
+       |
+       v
+ORGANIZATION ELIGIBILITY RULES
+       |
+       v
+BENEFIT / ENTITLEMENT SYSTEM
+       |
+       v
+MEMBER ACCESS
+```
+
+FlexiBill payment status can be an input into the organization's eligibility decision.
+
+Do not assume that FlexiBill natively manages all benefit entitlements, QR access, discount redemption, or partner privileges.
+
+## 9. Community and cooperative scenarios
+
+### Scenario A — Cooperative membership dues
+
+A cooperative may collect:
+
+- Membership registration fees.
+- Periodic member dues.
+- Agreed community contributions.
+- Service-related charges.
+
+The cooperative remains responsible for member records, cooperative governance, and accounting.
+
+Do not conflate membership dues with regulated deposits, savings balances, or investment products.
+
+### Scenario B — Professional association
+
+A professional association may collect annual membership dues and event fees.
+
+Possible workflow:
+
+1. Register member.
+2. Validate professional category.
+3. Generate annual fee.
+4. Collect payment.
+5. Update membership status.
+6. Provide access to member services.
+
+### Scenario C — Community network
+
+A community network may have local chapters or member groups.
+
+Recommended references:
+
+- Organization ID.
+- Chapter ID.
+- Member ID.
+- Membership category.
+- Billing ID.
+- Payment transaction ID.
+
+Do not assume native parent-child organizational hierarchy. Validate whether the hierarchy is managed in the merchant system or supported by a specific integration.
+
+## 10. Payment management and reconciliation
+
+### Payment scenarios
+
+| Scenario | Recommended handling |
+|---|---|
+| Successful annual dues | Match to member and membership period |
+| Failed recurring payment | Apply agreed recovery workflow |
+| Member pays manually | Reconcile to correct billing obligation |
+| Duplicate payment | Investigate and resolve |
+| Payment pending | Avoid duplicate collection |
+| Member pays for another person | Validate payer and member references |
+| Partial payment | Validate allocation and remaining balance |
+| Membership cancelled | Apply future billing and refund policy |
+
+### Recommended reconciliation fields
+
+- Organization ID.
+- Chapter ID.
+- Member ID.
+- Membership ID.
+- Membership period.
+- Membership category.
+- Billing ID.
+- Amount due.
+- Amount paid.
+- Payment status.
+- Transaction ID.
+- Reconciliation status.
+
+The organization should retain the member-to-payment mapping in its authoritative membership records.
+
+## 11. Failure and exception management
+
+| Scenario | Business risk | Recommended control |
+|---|---|---|
+| Duplicate member registration | Duplicate member accounts | Member identity validation |
+| Wrong membership category | Incorrect fee | Category approval |
+| Duplicate billing | Overcollection | Billing deduplication |
+| Failed payment | Unpaid membership dues | Recovery process |
+| Expired payment method | Collection failure | Alternative payment journey |
+| Payment without member reference | Unmatched funds | Reference validation |
+| Member cancellation | Future billing continues | Lifecycle control |
+| Membership reinstatement | Incorrect member status | Organization approval |
+| Wrong benefit eligibility | Member-service issue | Entitlement validation |
+| Chapter reassignment | Reporting mismatch | Master-data update |
+
+## 12. Merchant operational dashboard
+
+| Dashboard | Key information |
+|---|---|
+| Member overview | Total registered members |
+| Membership status | Active, pending, expired, suspended |
+| Membership categories | Members by category |
+| Renewal performance | Renewed and non-renewed members |
+| Billing overview | Due, paid, failed, outstanding |
+| Payment performance | Success and failure by method |
+| Recovery | Recovered and unrecovered dues |
+| Chapter reporting | Members and payments by chapter |
+| Reconciliation | Matched and unmatched payments |
+
+Confirm which views are available natively and which require merchant-side reporting.
+
+## 13. Merchant value proposition
+
+| Value dimension | Potential benefit |
+|---|---|
+| Member onboarding | Structured registration-to-payment journey |
+| Collection automation | Reduce manual dues collection |
+| Renewal management | Improve visibility of upcoming renewals |
+| Payment visibility | Track successful and failed payments |
+| Reconciliation | Match payments to members |
+| Member experience | More convenient payment journeys |
+| Operational efficiency | Reduce manual follow-up |
+| Growth | Support repeatable membership billing models |
+
+These are intended outcomes, not guaranteed performance improvements.
+
+## 14. Indonesia and Malaysia considerations
+
+Validate each country independently.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Confirm eligibility | Confirm eligibility |
+| Member registration | Validate workflow | Validate workflow |
+| Member Center | Confirm available functions | Confirm available functions |
+| Subscription configuration | Confirm supported setup | Confirm supported setup |
+| Pricing Table | Validate member acquisition journey | Validate member acquisition journey |
+| Billing Portal | Confirm supported functions | Confirm supported functions |
+| Recurring payment | Confirm method eligibility | Confirm method eligibility |
+| One-time payment | Confirm available methods | Confirm available methods |
+| Notifications | Confirm supported channels | Confirm supported channels |
+| Reconciliation | Confirm fields and exports | Confirm fields and exports |
+| Data protection | Validate local obligations | Validate local obligations |
+
+Do not assume feature or payment-method parity between ID and MY.
+
+## 15. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| COM-001 | Register member | Unique member reference |
+| COM-002 | Assign membership category | Correct category and pricing |
+| COM-003 | Generate registration fee | Correct amount and reference |
+| COM-004 | Successful registration payment | Payment matched to member |
+| COM-005 | Activate membership | Organization rules applied |
+| COM-006 | Generate renewal billing | Correct membership period |
+| COM-007 | Successful renewal payment | Correct renewal status |
+| COM-008 | Failed renewal payment | Recovery process initiated |
+| COM-009 | Pending payment | No duplicate collection |
+| COM-010 | Member cancellation | Future billing handled correctly |
+| COM-011 | Membership reinstatement | Organization approval applied |
+| COM-012 | Multiple chapters | Correct chapter references |
+| COM-013 | Duplicate payment | No duplicate financial posting |
+| COM-014 | Member benefit update | Entitlement system receives correct status |
+| COM-015 | Reconciliation | Billing and transaction references match |
+
+## 16. Go-live checklist
+
+### Commercial and governance
+- [ ] Membership categories approved.
+- [ ] Registration and renewal fees approved.
+- [ ] Membership validity rules documented.
+- [ ] Grace and overdue policies approved.
+- [ ] Cancellation and reinstatement rules approved.
+- [ ] Member benefit eligibility rules documented.
+
+### Product and integration
+- [ ] Collection and Plan structure validated.
+- [ ] Member Center scope confirmed.
+- [ ] Registration frontend readiness confirmed.
+- [ ] Member and billing references mapped.
+- [ ] Billing model selected.
+- [ ] Pricing Table and Billing Portal requirements validated.
+- [ ] API/webhook integration tested where applicable.
+
+### Payment
+- [ ] Eligible payment methods confirmed.
+- [ ] Successful payment tested.
+- [ ] Failed and pending outcomes tested.
+- [ ] Duplicate and partial payment handling agreed.
+- [ ] Refund and adjustment workflow validated.
+
+### Operations
+- [ ] Member-to-payment reconciliation approved.
+- [ ] Membership status synchronization tested.
+- [ ] Member notification approved.
+- [ ] Chapter or group reporting validated.
+- [ ] Support ownership assigned.
+- [ ] Country-specific readiness approved.
+
+## 17. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Member-facing self-service onboarding | Easier registration and renewal | Validate frontend readiness |
+| Native entitlement management | Connect payment to member benefits | Gap / strategic opportunity |
+| Member QR identity | Member recognition and benefit access | Strategic concept / validate |
+| Chapter hierarchy | Parent-child community management | Gap / strategic opportunity |
+| Multi-member payer | One payer responsible for multiple members | Validate data and billing model |
+| Member wallet | Stored value and contribution management | Separate product / strategic opportunity |
+| Cross-merchant member privileges | Benefits across participating merchants | Strategic concept, not generally available |
+| Automated renewal recovery | Improve renewal collection | Validate current retry and recovery capabilities |
+| Advanced member analytics | Improve retention and renewal insight | Strategic opportunity |
+
+Do not present these opportunities as released FlexiBill capabilities.
+
+## 18. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Member acquisition | Registration-to-paid conversion |
+| Membership growth | New paid members |
+| Renewal | Membership renewal rate |
+| Collection | Membership dues success rate |
+| Recovery | Failed-payment recovery rate |
+| Retention | Active member retention |
+| Finance operations | Reconciliation match rate |
+| Operational efficiency | Manual collection follow-up |
+| Member experience | Payment completion and support contact rate |
+
+Define the treatment of voluntary contributions, expired memberships, and cancelled memberships consistently.
+
+## 19. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 20. Governance
+
+This is a reusable reference solution for community and membership billing.
+
+Before reusing it:
+1. Validate current FlexiBill capabilities.
+2. Confirm the membership commercial model.
+3. Define member identity and organization ownership.
+4. Validate Member Center and registration frontend scope.
+5. Define membership and billing references.
+6. Confirm payment-method eligibility.
+7. Define entitlement and benefit ownership.
+8. Validate ID and MY separately.
+9. Obtain merchant, DOKU Product, Engineering, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-007  
+**Review trigger:** Product release, Member Center change, payment-channel change, country expansion, or material implementation finding.
