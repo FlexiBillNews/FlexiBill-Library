@@ -1,1 +1,649 @@
+# Travel & Hospitality — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-005  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Operations  
+**Status:** Reference solution — validate current FlexiBill capabilities, payment-channel eligibility, integration scope, and country requirements before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+A travel, hospitality, or accommodation merchant wants to collect payments at different stages of a booking journey.
+
+Typical business models include:
+
+- Hotels and resorts.
+- Travel agencies.
+- Tour operators.
+- Airlines and travel-related services.
+- Online travel agencies (OTAs).
+- Vacation packages.
+- Event and experience providers.
+- Corporate travel services.
+
+A booking may require:
+
+- An initial deposit.
+- A second installment.
+- A final balance before travel.
+- A scheduled payment.
+- Additional charges or optional services.
+
+### Merchant challenges
+
+| Problem | Business impact |
+|---|---|
+| Manual deposit collection | Operational workload |
+| Multiple payment deadlines | Collection complexity |
+| Unpaid booking balances | Revenue leakage |
+| Payment references disconnected from bookings | Reconciliation errors |
+| Manual payment reminders | Higher servicing costs |
+| Last-minute cancellations | Revenue and inventory risk |
+| Different booking terms | Complex billing rules |
+
+### Proposed solution
+
+Use FlexiBill to support agreed booking-related billing and payment collection workflows.
+
+The travel merchant's booking or reservation system remains responsible for:
+
+- Availability and inventory.
+- Reservation creation.
+- Booking confirmation.
+- Travel dates.
+- Cancellation and refund policies.
+- Final service fulfillment.
+
+FlexiBill supports the payment-connected billing process according to the validated integration model.
+
+**Important:** A booking payment schedule is not automatically a subscription. Choose the billing model based on the commercial obligation and the merchant's booking lifecycle.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Merchant:** TravelOne Group  
+**Business:** Hotel and travel package operator  
+**Customers:** Individual travelers, families, and corporate customers  
+**Commercial model:** Deposit + installments + final balance
+
+### Illustrative booking
+
+| Item | Amount |
+|---|---:|
+| Travel package | Rp12,000,000 |
+| Initial deposit | Rp3,000,000 |
+| Second installment | Rp4,000,000 |
+| Final installment | Rp5,000,000 |
+| Total | Rp12,000,000 |
+
+All values and schedules are illustrative.
+
+## 3. Travel billing models
+
+### Model A — Deposit and final balance
+
+Suitable for bookings that require an initial deposit and one later payment.
+
+```text
+BOOKING CREATED
+      |
+      v
+INITIAL DEPOSIT DUE
+      |
+      v
+DEPOSIT PAID
+      |
+      v
+BOOKING CONFIRMATION
+      |
+      v
+FINAL BALANCE DUE
+      |
+      v
+FINAL PAYMENT
+      |
+      v
+TRAVEL / SERVICE FULFILLMENT
+```
+
+### Model B — Multiple installments
+
+Suitable for higher-value packages booked well in advance.
+
+```text
+BOOKING CONFIRMED
+       |
+       v
+DEPOSIT PAYMENT
+       |
+       v
+INSTALLMENT 1
+       |
+       v
+INSTALLMENT 2
+       |
+       v
+FINAL BALANCE
+       |
+       v
+TRAVEL / SERVICE FULFILLMENT
+```
+
+### Model C — Scheduled payment
+
+Suitable for an agreed future payment date.
+
+The merchant's booking system or agreed billing workflow must define the due date and payment obligation.
+
+### Model D — Recurring travel membership
+
+Suitable for a genuine recurring membership, such as a travel club or accommodation membership.
+
+This may use a subscription model, subject to commercial and product validation.
+
+Do not represent a finite booking installment schedule as an indefinite recurring subscription.
+
+## 4. Core data model
+
+| Object | Meaning | Example |
+|---|---|---|
+| Customer | Person or organization making the booking | Customer ID |
+| Booking | Reservation or travel arrangement | Booking ID |
+| Travel product | Hotel, package, or service | Product Code |
+| Travel date | Service or departure date | Travel Date |
+| Booking amount | Agreed total commercial amount | Rp12,000,000 |
+| Billing obligation | Individual amount due | Installment ID |
+| Payment attempt | Individual collection attempt | Transaction ID |
+| Booking status | Reservation status | Confirmed |
+| Payment status | Collection status | Paid / Failed |
+
+### Recommended relationship
+
+```text
+CUSTOMER
+   |
+   v
+BOOKING
+   |
+   v
+BOOKING AMOUNT
+   |
+   +--------------------------+
+   |            |             |
+   v            v             v
+DEPOSIT     INSTALLMENT 1   FINAL BALANCE
+   |            |             |
+   v            v             v
+PAYMENT      PAYMENT        PAYMENT
+   |            |             |
+   +------------+-------------+
+                |
+                v
+         BOOKING SYSTEM
+                |
+                v
+       RESERVATION STATUS
+```
+
+Use a stable Booking ID to connect all billing obligations and payment transactions.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text
+       WEBSITE / TRAVEL APP
+                |
+                v
+       BOOKING / RESERVATION
+                |
+                v
+       BOOKING CONFIRMATION
+                |
+                v
+        BILLING SCHEDULE
+                |
+                v
+            FLEXIBILL
+      Collection / Plan / Pricing
+                |
+                v
+       BILLING OBLIGATIONS
+                |
+                v
+        PAYMENT COLLECTION
+                |
+           +----+----+
+           |         |
+           v         v
+        SUCCESS    FAILURE
+           |         |
+           v         v
+      PAYMENT      RECOVERY /
+      CONFIRMED    CUSTOMER ACTION
+           |         |
+           +----+----+
+                |
+                v
+       PAYMENT RESULT / WEBHOOK
+                |
+                v
+       BOOKING SYSTEM UPDATE
+                |
+                v
+       RESERVATION / FULFILLMENT
+```
+
+### System responsibility
+
+| Responsibility | Primary owner |
+|---|---|
+| Inventory and availability | Travel merchant |
+| Reservation | Booking system |
+| Booking price | Merchant |
+| Deposit and installment rules | Merchant |
+| Billing obligation source | Merchant or agreed billing configuration |
+| Payment collection | DOKU payment infrastructure |
+| Payment result | DOKU and integrated systems |
+| Booking confirmation | Merchant |
+| Cancellation and refund rules | Merchant |
+| Travel fulfillment | Merchant |
+
+FlexiBill should not be treated as the source of truth for room availability, ticket inventory, or booking fulfillment.
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Define the booking catalogue
+
+Example:
+
+| Product | Commercial model |
+|---|---|
+| Hotel stay | Deposit + balance |
+| Holiday package | Multiple installments |
+| Tour package | Deposit + scheduled payment |
+| Corporate travel | Contract-defined billing |
+| Travel membership | Recurring subscription, if applicable |
+
+### Step 2 — Define Collection structure
+
+Possible structures:
+
+| Collection | Purpose |
+|---|---|
+| Hotel Bookings | Accommodation billing |
+| Tour Packages | Tour-related billing |
+| Domestic Travel | Domestic travel bookings |
+| International Travel | International travel bookings |
+| Corporate Travel | Corporate customer billing |
+| Travel Membership | Genuine recurring membership |
+
+The Collection structure should reflect operational and reporting requirements.
+
+### Step 3 — Define Plans and Pricing
+
+Illustrative Plan examples:
+
+- Hotel Deposit.
+- Hotel Final Balance.
+- Holiday Package Installment.
+- Tour Package Payment.
+- Corporate Travel Billing.
+- Travel Membership.
+
+The actual configuration should be based on the supported billing model and the merchant's booking requirements.
+
+### Step 4 — Define installment schedule
+
+Example:
+
+| Billing stage | Due date | Amount |
+|---|---|---:|
+| Deposit | Booking date | Rp3,000,000 |
+| Installment 1 | 30 days after booking | Rp4,000,000 |
+| Final balance | 14 days before travel | Rp5,000,000 |
+| **Total** | | **Rp12,000,000** |
+
+The merchant must define:
+- Booking date.
+- Service date.
+- Payment due dates.
+- Installment amounts.
+- Cancellation deadline.
+- Unpaid-balance policy.
+- Payment confirmation deadline.
+
+Do not assume every arbitrary booking-relative date can be configured natively in a standard recurring subscription.
+
+If the booking system calculates dynamic dates, an API/H2H or merchant-orchestrated billing model may be more appropriate.
+
+### Step 5 — Map booking references
+
+Recommended fields:
+
+| Field | Purpose |
+|---|---|
+| Customer ID | Customer identity |
+| Booking ID | Primary reservation reference |
+| Travel product ID | Booked service |
+| Booking date | Reservation date |
+| Travel date | Fulfillment date |
+| Billing ID | Individual payment obligation |
+| Installment number | Payment sequence |
+| Due date | Payment deadline |
+| Amount due | Outstanding amount |
+| Payment transaction ID | Collection reference |
+
+### Step 6 — Select the integration model
+
+| Model | Suitable when | Validation |
+|---|---|---|
+| Billing Automation | A standard billing schedule can be configured | Validate scheduling and lifecycle behavior |
+| API / H2H | Booking engine controls dynamic installment obligations | Confirm APIs and webhook coverage |
+| Hybrid | Booking engine calculates amounts and dates while FlexiBill supports collection | Define responsibilities and status mapping |
+| Account Billing | Charges follow an account and calendar-date billing model | Validate fit for the specific booking model |
+
+For most complex booking installment scenarios, evaluate the merchant's API/H2H and hybrid requirements carefully.
+
+## 7. End-to-end customer journey
+
+### Journey A — Booking with deposit
+
+```text
+CUSTOMER SELECTS TRAVEL PRODUCT
+             |
+             v
+       BOOKING CREATED
+             |
+             v
+       DEPOSIT REQUESTED
+             |
+             v
+       CUSTOMER PAYS DEPOSIT
+             |
+             v
+       PAYMENT CONFIRMED
+             |
+             v
+       BOOKING SYSTEM UPDATED
+             |
+             v
+       RESERVATION CONFIRMED
+```
+
+The merchant defines whether the reservation is held, confirmed, or released before the deposit is paid.
+
+### Journey B — Installment collection
+
+```text
+BOOKING CONFIRMED
+       |
+       v
+INSTALLMENT DUE
+       |
+       v
+CUSTOMER NOTIFIED
+       |
+       v
+PAYMENT COLLECTION
+       |
+       v
+PAYMENT RESULT
+    /       \
+   /         \
+SUCCESS     FAILURE
+  |            |
+  v            v
+UPDATE       RECOVERY /
+BALANCE      CUSTOMER ACTION
+  |            |
+  +------+-----+
+         |
+         v
+  NEXT BILLING STAGE
+```
+
+### Journey C — Final balance before travel
+
+1. Booking system calculates the remaining balance.
+2. Merchant defines the final payment deadline.
+3. Customer receives the final payment request.
+4. Payment is completed through an eligible method.
+5. Payment result is reconciled against the booking.
+6. Merchant applies its booking and fulfillment policy.
+
+## 8. Booking changes and exceptions
+
+Travel bookings can change after the original billing schedule has been created.
+
+| Scenario | Merchant requirement | Validation |
+|---|---|---|
+| Booking date changes | Recalculate payment deadlines | Merchant booking-system logic |
+| Travel date changes | Reassess installment schedule | Merchant booking-system logic |
+| Booking upgrade | Calculate additional amount | Pricing and billing integration |
+| Booking downgrade | Calculate revised amount | Refund or adjustment policy |
+| Partial cancellation | Recalculate remaining obligations | Merchant-side allocation |
+| Full cancellation | Apply cancellation and refund rules | Refund integration and merchant policy |
+| Customer changes payer | Update payment responsibility | Identity and reference mapping |
+| Duplicate payment | Reconcile and resolve | Idempotency and refund controls |
+
+Do not assume that changing a booking automatically recalculates existing FlexiBill obligations.
+
+Define how cancelled or amended obligations are stopped, adjusted, refunded, or replaced.
+
+## 9. Failed-payment and recovery management
+
+### Failure scenarios
+
+| Scenario | Recommended action |
+|---|---|
+| Deposit payment fails | Apply merchant's reservation-hold policy |
+| Installment payment fails | Notify customer and follow approved recovery rules |
+| Final balance unpaid | Escalate according to booking terms |
+| Payment pending | Avoid duplicate collection |
+| Payment method expires | Offer an eligible alternative |
+| Duplicate payment | Reconcile before refund or adjustment |
+| Booking cancelled | Stop or adjust future collection according to approved workflow |
+
+### Operational monitoring
+
+Track:
+
+- Bookings with outstanding balances.
+- Upcoming installments.
+- Overdue installments.
+- Failed payment attempts.
+- Recovered billing obligations.
+- Bookings with unpaid final balances.
+- Unreconciled payment transactions.
+
+A failed payment does not automatically mean the booking is cancelled. The booking system and merchant policy determine the reservation outcome.
+
+## 10. Customer experience design
+
+### Interface roles
+
+| Interface | Customer purpose |
+|---|---|
+| Travel website / app | Discover and select products |
+| Booking engine | Create and manage reservations |
+| Payment checkout | Pay deposit or installment |
+| Billing Portal | View supported billing information |
+| Notifications | Receive due-date reminders and payment results |
+| Merchant support | Resolve booking and payment issues |
+
+### Experience principles
+
+- Show the total booking price.
+- Clearly distinguish deposit, installments, and final balance.
+- Display payment deadlines.
+- Explain cancellation and refund terms.
+- Show remaining balance.
+- Identify the booking reference in payment communications.
+- Explain what happens when a payment fails.
+- Avoid confirming travel fulfillment before the merchant's conditions are met.
+
+## 11. Merchant operational dashboard
+
+| Dashboard | Key information |
+|---|---|
+| Booking billing overview | Total bookings and payment status |
+| Deposit collection | Deposit due, paid, and outstanding |
+| Installment tracking | Upcoming and overdue installments |
+| Final balance | Unpaid balances approaching travel dates |
+| Payment performance | Success and failure by payment method |
+| Recovery | Recovered and unrecovered obligations |
+| Booking exceptions | Cancelled, amended, or disputed bookings |
+| Reconciliation | Booking-to-payment matching |
+
+Confirm which views are native and which require merchant-side reporting or integration.
+
+## 12. Merchant value proposition
+
+| Value dimension | Potential benefit |
+|---|---|
+| Booking conversion | More structured deposit collection |
+| Revenue control | Better installment and balance visibility |
+| Customer experience | Clear payment schedule |
+| Operations | Less manual collection follow-up |
+| Reconciliation | Consistent booking-to-payment references |
+| Risk management | Earlier identification of unpaid bookings |
+| Scalability | Repeatable billing processes across products |
+
+These are intended outcomes, not guaranteed performance improvements.
+
+## 13. Indonesia and Malaysia considerations
+
+Validate the solution separately in each market.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Confirm eligibility | Confirm eligibility |
+| Billing configuration | Validate schedule support | Validate schedule support |
+| API / H2H | Confirm integration scope | Confirm integration scope |
+| Pricing Table | Validate acquisition journey | Validate acquisition journey |
+| Billing Portal | Confirm supported functions | Confirm supported functions |
+| Recurring payment | Confirm eligibility | Confirm eligibility |
+| One-time payment | Confirm available methods | Confirm available methods |
+| Payment notifications | Confirm supported channels | Confirm supported channels |
+| Refunds and reversals | Confirm workflow | Confirm workflow |
+| Currency and tax | Confirm local requirements | Confirm local requirements |
+| Reporting | Confirm fields and exports | Confirm fields and exports |
+
+Do not assume that a payment method eligible for recurring collection is also eligible for every booking payment model.
+
+## 14. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| TRV-001 | Create booking reference | Unique booking ID |
+| TRV-002 | Generate deposit obligation | Correct amount and due date |
+| TRV-003 | Pay deposit | Payment linked to booking |
+| TRV-004 | Confirm reservation | Merchant rules applied |
+| TRV-005 | Generate installment | Correct schedule and amount |
+| TRV-006 | Successful installment | Correct outstanding balance |
+| TRV-007 | Failed installment | Correct recovery process |
+| TRV-008 | Final balance collection | Correct remaining amount |
+| TRV-009 | Change travel date | Schedule adjusted according to policy |
+| TRV-010 | Partial cancellation | Correct obligation adjustment |
+| TRV-011 | Full cancellation | Correct future billing and refund handling |
+| TRV-012 | Duplicate payment event | No duplicate financial update |
+| TRV-013 | Payment pending | No unintended duplicate collection |
+| TRV-014 | Reconciliation | Booking and transaction references match |
+
+## 15. Go-live checklist
+
+### Commercial
+- [ ] Booking products and pricing approved.
+- [ ] Deposit rules documented.
+- [ ] Installment schedules approved.
+- [ ] Final balance deadlines approved.
+- [ ] Cancellation and refund policies documented.
+
+### Product and integration
+- [ ] Collection and Plan structure validated.
+- [ ] Billing model selected.
+- [ ] Booking ID and billing references defined.
+- [ ] Dynamic scheduling responsibility agreed.
+- [ ] API/H2H integration tested where applicable.
+- [ ] Payment result synchronization tested.
+
+### Payment
+- [ ] Payment methods confirmed.
+- [ ] Deposit collection tested.
+- [ ] Installment collection tested.
+- [ ] Failure and recovery flow tested.
+- [ ] Duplicate and pending outcomes handled.
+- [ ] Refund and reversal workflow tested.
+
+### Operations
+- [ ] Booking-to-payment reconciliation validated.
+- [ ] Outstanding-balance dashboard validated.
+- [ ] Booking amendment process tested.
+- [ ] Customer notification approved.
+- [ ] Support ownership assigned.
+- [ ] Country-specific readiness approved.
+
+## 16. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Dynamic booking-relative billing | Calculate due dates from travel dates | Merchant integration / validation |
+| Automated installment rescheduling | Handle booking changes | Gap / strategic opportunity |
+| Booking-to-billing orchestration | Connect reservation and collection lifecycle | Integration opportunity |
+| Partial payment allocation | Support flexible settlement | Validate current capability |
+| Consolidated booking payments | One payment for multiple obligations | Validate payment and allocation design |
+| Automated refund orchestration | Simplify cancellations | Validate payment integration |
+| Travel membership subscriptions | Recurring travel benefits | Separate subscription use case |
+| Cross-merchant travel bill hub | Consolidated travel-related payment | Strategic concept, not generally available |
+
+## 17. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Booking conversion | Deposit payment conversion |
+| Collection performance | Installment success rate |
+| Revenue control | Outstanding booking balance |
+| Recovery | Failed installment recovery rate |
+| Operational efficiency | Manual payment follow-up |
+| Financial accuracy | Unmatched booking-to-payment rate |
+| Customer experience | Payment completion and support contact rates |
+| Fulfillment readiness | Bookings with final balance paid by deadline |
+
+Define reporting cut-offs and the treatment of cancelled or amended bookings consistently.
+
+## 18. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 19. Governance
+
+This is a reusable reference solution for travel and hospitality billing.
+
+Before reusing it:
+1. Validate current FlexiBill capabilities.
+2. Confirm booking-system ownership and integration scope.
+3. Define booking and billing obligation references.
+4. Confirm payment-method eligibility.
+5. Validate dynamic installment scheduling requirements.
+6. Define cancellation, adjustment, and refund ownership.
+7. Validate country-specific requirements.
+8. Obtain merchant, DOKU Product, Engineering, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-005  
+**Review trigger:** Product release, payment-channel change, booking integration change, country expansion, or material implementation finding.
