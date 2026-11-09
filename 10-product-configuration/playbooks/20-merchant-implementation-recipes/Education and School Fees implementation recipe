@@ -1,1 +1,627 @@
+# Education & School Fees — Merchant Implementation Recipe
 
+**Phase:** 3 — Merchant Implementation Recipes  
+**Use case ID:** MER-003  
+**Product:** DOKU FlexiBill  
+**Target markets:** Indonesia (ID) and Malaysia (MY)  
+**Audience:** Sales, Product, Partnership, Implementation, Engineering, Operations  
+**Status:** Reference solution — validate current product capabilities, payment-channel eligibility, and country scope before merchant commitment.
+
+---
+
+## 1. Executive Summary
+
+### Business scenario
+
+A school, university, tutoring provider, or education group needs to manage student-related billing and collect education fees across recurring and one-time payment obligations.
+
+Typical charges include:
+
+- Registration and enrollment fees.
+- Monthly tuition fees.
+- Semester fees.
+- Annual education fees.
+- Examination fees.
+- Laboratory and facility charges.
+- Transportation fees.
+- Accommodation fees.
+- Extracurricular activities.
+- Other approved education-related charges.
+
+The merchant wants to:
+
+- Associate payments with the correct student.
+- Support parents or guardians who pay on behalf of students.
+- Generate billing according to education schedules.
+- Support recurring tuition collection where appropriate.
+- Provide payment visibility to students and parents.
+- Monitor outstanding and overdue fees.
+- Reduce manual reconciliation.
+- Support different campuses, schools, grades, and programs.
+
+### Proposed solution
+
+Use FlexiBill to organize education billing relationships, configure applicable billing models, manage recurring billing where supported, and connect payment collection with the education provider's student and finance systems.
+
+The education provider remains responsible for academic records, enrollment eligibility, tuition calculation, and student status.
+
+## 2. Merchant profile
+
+### Example merchant
+
+**Merchant:** BrightFuture Education Group  
+**Business:** Private schools and education centers  
+**Operating model:** Multiple campuses and education programs  
+**Payers:** Parents, guardians, students, and corporate sponsors
+
+### Current business problems
+
+| Problem | Business impact |
+|---|---|
+| Manual tuition reminders | High administration workload |
+| Student and payer records disconnected | Payment allocation errors |
+| Different fee schedules | Complex billing administration |
+| Multiple campuses | Fragmented collection reporting |
+| Late tuition payments | Outstanding receivables |
+| Manual payment reconciliation | Finance workload |
+| Parents paying for multiple children | Difficult payer-level visibility |
+
+### Desired outcomes
+
+1. Improve tuition collection efficiency.
+2. Reduce overdue education fees.
+3. Simplify billing across campuses.
+4. Improve parent and student payment visibility.
+5. Improve payment reconciliation.
+6. Support recurring tuition collection.
+7. Reduce manual administrative work.
+
+## 3. Education billing model
+
+Education billing requires a distinction between the student, the payer, and the billing obligation.
+
+### Core data model
+
+| Object | Meaning | Example |
+|---|---|---|
+| Institution | Education provider | BrightFuture Group |
+| Campus | School or branch | Jakarta Campus |
+| Student | Person receiving education | Student ID |
+| Guardian / payer | Person responsible for payment | Parent ID |
+| Program | Education program | Primary School |
+| Academic period | School year or semester | 2027/2028 |
+| Fee type | Category of charge | Tuition |
+| Billing obligation | Amount due for a period or event | Tuition Billing ID |
+| Payment attempt | Individual collection attempt | Transaction ID |
+
+### Recommended relationship
+
+```text id="x1q7nb"
+        EDUCATION GROUP
+               |
+        +------+------+
+        |             |
+        v             v
+     CAMPUS A      CAMPUS B
+        |
+        v
+      STUDENT
+        |
+        +-------------------+
+        |                   |
+        v                   v
+     GUARDIAN            PROGRAM
+        |                   |
+        +---------+---------+
+                  |
+                  v
+            FEE OBLIGATIONS
+                  |
+          +-------+-------+
+          |               |
+          v               v
+       TUITION         OTHER FEES
+          |               |
+          +-------+-------+
+                  |
+                  v
+              PAYMENT
+```
+
+### Important design principle
+
+A student is not necessarily the payer.
+
+One guardian may pay for multiple students. One student may have multiple authorized payers. The merchant's system should own the relationship and provide stable identifiers for billing and reconciliation.
+
+Do not assume FlexiBill automatically provides a family-account or multi-student payer hierarchy. Validate the required data model and integration.
+
+## 4. Education fee catalogue
+
+### Illustrative fee structure
+
+| Fee type | Example amount | Frequency |
+|---|---:|---|
+| Registration fee | Rp1,000,000 | One-time |
+| Monthly tuition | Rp2,500,000 | Monthly |
+| Semester fee | Rp8,000,000 | Per semester |
+| Annual facility fee | Rp1,500,000 | Annual |
+| Examination fee | Rp500,000 | Event-based |
+| Transportation | Rp750,000 | Monthly |
+| Extracurricular | Rp300,000 | Monthly |
+| Laboratory fee | Rp600,000 | Per semester |
+
+All amounts are illustrative. Actual tuition and fee policies are determined by the institution.
+
+### Fee classification
+
+| Fee category | Billing approach |
+|---|---|
+| One-time registration | One-time billing |
+| Monthly tuition | Recurring monthly billing |
+| Semester tuition | Semester-based billing |
+| Annual fee | Annual billing |
+| Optional activities | Separate or additional billing |
+| Ad hoc charges | Individual billing obligation |
+
+Do not assume every fee type should be represented as a separate subscription. Choose the billing model based on the institution's commercial and operational requirements.
+
+## 5. FlexiBill solution architecture
+
+### Conceptual architecture
+
+```text id="p7n4kd"
+       SCHOOL / EDUCATION ERP
+                 |
+                 v
+        STUDENT & GUARDIAN DATA
+                 |
+                 v
+        TUITION / FEE CALCULATION
+                 |
+                 v
+         BILLING OBLIGATIONS
+                 |
+                 v
+          FLEXIBILL LAYER
+       Collection / Plan / Pricing
+                 |
+                 v
+         BILLING ORCHESTRATION
+                 |
+                 v
+          PAYMENT COLLECTION
+                 |
+           +-----+-----+
+           |           |
+           v           v
+        SUCCESS      FAILURE
+           |           |
+           v           v
+       PAID BILL     RECOVERY
+           |           |
+           +-----+-----+
+                 |
+                 v
+        PAYMENT RESULT / WEBHOOK
+                 |
+                 v
+          EDUCATION FINANCE
+                 |
+                 v
+       RECONCILIATION / REPORTING
+```
+
+### System responsibilities
+
+| Responsibility | Primary owner |
+|---|---|
+| Student master data | Education ERP |
+| Guardian and payer relationship | Education ERP |
+| Enrollment | Education ERP |
+| Tuition calculation | Education ERP / institution |
+| Fee policy | Institution |
+| Billing schedule | Institution or agreed billing configuration |
+| Payment collection | DOKU payment infrastructure |
+| Payment outcome | DOKU and integrated systems |
+| Student academic status | Education ERP |
+| Financial reconciliation | Institution finance team |
+
+FlexiBill should not be treated as the source of truth for student enrollment, grades, attendance, or academic eligibility.
+
+## 6. Merchant configuration blueprint
+
+### Step 1 — Define Collection structure
+
+Possible structures:
+
+| Collection | Purpose |
+|---|---|
+| Primary School | Primary education billing |
+| Junior High School | Junior high billing |
+| Senior High School | Senior high billing |
+| University | Higher education billing |
+| Jakarta Campus | Campus-specific billing |
+| Bandung Campus | Campus-specific billing |
+| Corporate Education | Sponsored or corporate-funded education |
+
+Choose a structure that supports billing operations and reporting without creating unnecessary duplication.
+
+### Step 2 — Define Plans
+
+Example Plans:
+
+- Primary School Tuition.
+- Junior High Tuition.
+- Senior High Tuition.
+- University Semester Fee.
+- Monthly Learning Program.
+- Annual Education Package.
+- Transportation Package.
+
+### Step 3 — Configure Pricing
+
+| Plan | Pricing model | Example | Frequency |
+|---|---|---:|---|
+| Monthly Tuition | Flat Fee | Rp2,500,000 | Monthly |
+| Semester Tuition | Flat Fee | Rp8,000,000 | Per semester |
+| Annual Fee | Flat Fee | Rp1,500,000 | Annual |
+| Transportation | Flat Fee | Rp750,000 | Monthly |
+| Examination | One-time amount | Rp500,000 | Event-based |
+
+Validate available pricing models, billing intervals, and end conditions before implementation.
+
+### Step 4 — Map student and payer records
+
+Recommended mapping:
+
+| Field | Purpose |
+|---|---|
+| Institution ID | Education provider |
+| Campus ID | School or branch |
+| Student ID | Stable student identifier |
+| Guardian ID | Stable payer identity |
+| Academic year | Reporting and billing period |
+| Program ID | Education program |
+| Fee type | Tuition or other charge |
+| Billing ID | Unique fee obligation |
+| Due date | Payment deadline |
+| Amount due | Approved fee amount |
+
+Use stable identifiers. Names, phone numbers, and email addresses should not be used as the only reconciliation keys.
+
+### Step 5 — Define billing schedules
+
+Example:
+
+| Fee | Schedule |
+|---|---|
+| Registration | At enrollment |
+| Tuition | Every month |
+| Semester fee | At semester start |
+| Annual fee | Once per academic year |
+| Examination fee | Before examination |
+| Transportation | Monthly |
+
+Define:
+- Billing start date.
+- Billing frequency.
+- Due date.
+- Academic period.
+- Fee amount source.
+- Late-payment policy.
+- Collection window.
+- Payment confirmation process.
+
+The education system should remain the source of truth for academic periods and fee calculations unless another approved architecture is established.
+
+### Step 6 — Select the integration model
+
+Potential approaches:
+
+| Model | Suitable when | Validation |
+|---|---|---|
+| DOKU-hosted Billing Automation | Standard recurring billing can be configured in FlexiBill | Confirm workflow and data ownership |
+| API / H2H | Education ERP controls billing and requires integration | Confirm required APIs and webhook events |
+| Hybrid | Institution calculates fees while FlexiBill supports agreed billing and collection functions | Define system boundaries |
+| Account Billing | Billing is organized around an account and calendar-date model | Validate exact use case fit |
+
+Do not choose a model solely because it is technically available. Select it based on who owns the billing obligation and academic schedule.
+
+## 7. End-to-end customer journey
+
+### Journey A — Student enrollment
+
+```text id="w6j3rt"
+STUDENT ACCEPTED
+       |
+       v
+STUDENT RECORD CREATED
+       |
+       v
+GUARDIAN / PAYER LINKED
+       |
+       v
+REGISTRATION FEE GENERATED
+       |
+       v
+PAYMENT REQUEST PRESENTED
+       |
+       v
+CUSTOMER COMPLETES PAYMENT
+       |
+       v
+PAYMENT RESULT SENT TO ERP
+       |
+       v
+ENROLLMENT PROCESS CONTINUES
+```
+
+The institution determines whether successful payment is required before enrollment is confirmed.
+
+### Journey B — Monthly tuition
+
+```text id="c4h8mv"
+TUITION BILLING DATE
+        |
+        v
+BILLING OBLIGATION GENERATED
+        |
+        v
+CUSTOMER NOTIFIED
+        |
+        v
+PAYMENT COLLECTION
+        |
+        v
+PAYMENT RESULT
+     /       \
+    /         \
+ SUCCESS     FAILURE
+   |            |
+   v            v
+PAID STATUS   OUTSTANDING
+   |            |
+   v            v
+ERP UPDATE   FOLLOW-UP /
+             RECOVERY
+```
+
+### Journey C — Parent paying for multiple children
+
+Example:
+
+A parent has two children enrolled in the same education group.
+
+| Student | Billing obligation | Amount |
+|---|---|---:|
+| Student A | Monthly tuition | Rp2,500,000 |
+| Student B | Monthly tuition | Rp2,500,000 |
+| Student B | Transportation | Rp750,000 |
+| **Total** | | **Rp5,750,000** |
+
+The institution may want to present one payer-level view of several obligations.
+
+This is a customer-experience and data-integration requirement. Do not assume that native consolidated invoicing or multi-student account aggregation is available.
+
+Possible implementation designs:
+- Separate payment requests per billing obligation.
+- Merchant-generated payer summary with separate payment references.
+- A consolidated payment experience where supported and validated.
+- An API-driven payment journey with merchant-side allocation logic.
+
+The institution must define whether the parent pays obligations individually or through an approved consolidated payment model.
+
+## 8. Customer experience design
+
+### Customer-facing interface roles
+
+| Interface | Purpose |
+|---|---|
+| Education portal | Student and guardian access |
+| Pricing Table | Present selected education offers, where relevant |
+| Registration journey | Capture required registration details |
+| Payment checkout | Complete payment |
+| Billing Portal | Review supported billing information |
+| Notifications | Reminders and payment outcomes |
+| Education ERP | Official student and fee status |
+
+### Customer experience principles
+
+- Show the student name and reference clearly.
+- Identify the relevant academic year or semester.
+- Explain fee type and due date.
+- Show the amount due and payment status.
+- Avoid ambiguous payment references.
+- Explain late-payment rules.
+- Provide a clear support contact.
+- Protect student and guardian information.
+
+## 9. Outstanding fees and recovery
+
+### Typical failure scenarios
+
+| Scenario | Recommended handling |
+|---|---|
+| Insufficient funds | Notify payer and follow permitted recovery rules |
+| Expired payment credential | Request an eligible payment-method update |
+| Bank decline | Explain next action without exposing sensitive internal details |
+| Payment pending | Avoid creating duplicate payment obligations |
+| Late payment | Apply institution's approved late-fee policy |
+| Wrong student reference | Resolve allocation before changing payment status |
+| Duplicate notification | Reconcile idempotently |
+| Partial payment | Apply only if the institution's policy and integration support it |
+
+### Operational monitoring
+
+Track:
+- Total fees due.
+- Successful collections.
+- Failed collections.
+- Outstanding amount.
+- Overdue amount.
+- Recovered obligations.
+- Payment success by campus.
+- Collection success by payment method.
+- Outstanding amount by academic period.
+
+Do not treat a failed attempt as an unpaid fee if another valid payment has already settled the same billing obligation.
+
+## 10. Merchant operational dashboard
+
+| Dashboard | Key information |
+|---|---|
+| Student billing overview | Students with upcoming and outstanding fees |
+| Campus performance | Billing and collection by campus |
+| Tuition collection | Due amount, paid amount, outstanding amount |
+| Fee-type performance | Tuition, registration, transport, and other fees |
+| Payment performance | Success and failure by payment method |
+| Recovery | Recovered and unrecovered obligations |
+| Academic period | Collection by school year or semester |
+| Payer view | Obligations associated with each payer, where data is available |
+
+Confirm which reports are available natively and which require merchant-side reporting or integration.
+
+## 11. Merchant value proposition
+
+| Value dimension | Potential benefit |
+|---|---|
+| Collection | More structured tuition collection |
+| Administration | Less manual payment follow-up |
+| Reconciliation | More consistent student-to-payment matching |
+| Parent experience | Better billing visibility |
+| Campus operations | Consistent collection process |
+| Financial control | Better outstanding-fee monitoring |
+| Scalability | Repeatable billing across campuses and programs |
+
+These are target outcomes, not guaranteed improvements. Establish baselines before launch.
+
+## 12. Indonesia and Malaysia considerations
+
+Validate separately for each country.
+
+| Area | Indonesia | Malaysia |
+|---|---|---|
+| Merchant onboarding | Confirm eligibility | Confirm eligibility |
+| Billing configuration | Validate current setup | Validate current setup |
+| API / H2H integration | Confirm required scope | Confirm required scope |
+| Pricing Table | Validate use case | Validate use case |
+| Member Center | Validate identity workflow | Validate identity workflow |
+| Billing Portal | Confirm available functions | Confirm available functions |
+| Recurring auto-debit | Confirm eligible channels | Confirm eligible channels |
+| One-time payment | Confirm available methods | Confirm available methods |
+| Notifications | Confirm supported channels | Confirm supported channels |
+| Tax and currency | Confirm local requirements | Confirm local requirements |
+| Reporting | Confirm fields and exports | Confirm fields and exports |
+
+Do not assume feature parity across markets.
+
+## 13. Implementation test plan
+
+| Test ID | Scenario | Acceptance criteria |
+|---|---|---|
+| EDU-001 | Create education Collection | Correct institutional grouping |
+| EDU-002 | Configure tuition Plan | Correct fee definition |
+| EDU-003 | Configure monthly tuition | Correct amount and schedule |
+| EDU-004 | Create student reference | Stable student mapping |
+| EDU-005 | Link guardian/payer | Correct payer association |
+| EDU-006 | Generate registration fee | Correct one-time obligation |
+| EDU-007 | Generate recurring tuition | Correct billing period |
+| EDU-008 | Successful payment | Correct student and billing mapping |
+| EDU-009 | Failed payment | Correct outstanding status |
+| EDU-010 | Parent with multiple students | Correct payer-to-student mapping |
+| EDU-011 | Multiple fee types | Correct fee allocation |
+| EDU-012 | Payment pending | No duplicate obligation or collection |
+| EDU-013 | Late payment | Institution policy applied |
+| EDU-014 | Duplicate webhook | No duplicate financial update |
+| EDU-015 | Reconciliation | ERP and payment references match |
+
+## 14. Go-live checklist
+
+### Commercial
+- [ ] Fee catalogue approved.
+- [ ] Tuition schedules documented.
+- [ ] Registration and additional fee policies approved.
+- [ ] Late-payment policy approved.
+- [ ] Payer responsibility defined.
+
+### Data and integration
+- [ ] Student ID mapping confirmed.
+- [ ] Guardian/payer mapping confirmed.
+- [ ] Academic period reference defined.
+- [ ] Billing obligation ID defined.
+- [ ] ERP integration scope agreed.
+- [ ] Webhook and status handling tested.
+
+### Product and payment
+- [ ] Collection and Plan configuration validated.
+- [ ] Billing model selected.
+- [ ] Payment methods confirmed.
+- [ ] Recurring authorization tested, if applicable.
+- [ ] Billing Portal scope confirmed.
+- [ ] Failure and recovery workflow tested.
+
+### Operations
+- [ ] Campus reporting validated.
+- [ ] Outstanding-fee reporting validated.
+- [ ] Reconciliation tested.
+- [ ] Support ownership assigned.
+- [ ] Country-specific readiness approved.
+
+## 15. Known gaps and future opportunities
+
+| Opportunity | Potential value | Internal status |
+|---|---|---|
+| Native family/payer hierarchy | One guardian linked to multiple students | Validate data model / strategic gap |
+| Consolidated family billing | One view for multiple student obligations | Gap / strategic direction |
+| Automated academic-period billing | Align billing with school calendar | Integration / validation required |
+| Partial payment allocation | Flexible settlement of education fees | Validate current capability |
+| Scholarship and discount orchestration | More flexible fee treatment | Requires institution rules and validation |
+| Student entitlement integration | Connect payment to approved access or services | External integration required |
+| Automated late-fee calculation | Reduce manual finance work | Validate pricing and billing capabilities |
+| Multi-campus consolidated reporting | Better group-level visibility | Reporting / integration validation |
+| Cross-merchant education hub | Shared payment experience across providers | Strategic concept, not generally available |
+
+## 16. Success measurement
+
+| Outcome | KPI |
+|---|---|
+| Collection improvement | Tuition collection success rate |
+| Revenue control | Outstanding fee value |
+| Recovery | Overdue fee recovery rate |
+| Operational efficiency | Manual follow-up volume |
+| Reconciliation | Unmatched payment rate |
+| Parent experience | Payment completion and support contact rates |
+| Campus performance | Collection rate by campus |
+| Billing quality | Incorrect or duplicate allocation rate |
+
+Define the reporting cut-off, billing denominator, and treatment of partial or late payments before performance comparison.
+
+## 17. Related playbooks
+
+- [Collection Management](../10-product-configuration/01-collection-management.md)
+- [Plan and Pricing Configuration](../10-product-configuration/02-plan-and-pricing-configuration.md)
+- [Pricing Table](../10-product-configuration/03-pricing-table.md)
+- [Member Center](../10-product-configuration/04-member-center.md)
+- [Billing Portal](../10-product-configuration/05-billing-portal.md)
+- [Account Billing](../10-product-configuration/06-account-billing.md)
+- [Subscription Lifecycle](../10-product-configuration/07-subscription-lifecycle.md)
+- [Payment Management](../10-product-configuration/08-payment-management.md)
+- [Configuration Reference Matrix](../10-product-configuration/09-configuration-reference-matrix.md)
+
+## 18. Governance
+
+This is a reusable reference solution for education and school-fee collection.
+
+Before reusing it:
+1. Validate FlexiBill capabilities and integration scope.
+2. Confirm the education provider's student and payer data model.
+3. Define billing obligation identifiers.
+4. Confirm recurring payment eligibility.
+5. Validate parent and multi-student payment requirements.
+6. Test reconciliation and exception handling.
+7. Obtain institution, DOKU Product, Engineering, and Operations sign-off.
+
+**Owner:** FlexiBill Product  
+**Use case ID:** MER-003  
+**Review trigger:** Product release, payment-channel change, education ERP integration change, country expansion, or material implementation finding.
