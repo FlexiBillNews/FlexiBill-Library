@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiBill Malaysia — Set Up Recurring Billing (Merchant Guide)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#E1251B; --brand-deep:#B5140C; --brand-tint:#FDECEB; --brand-tint2:#FBDAD7;
+    --ink:#17171C; --ink-2:#41414C; --muted:#73737F; --faint:#9A9AA6;
+    --line:#E7E7ED; --line-strong:#D8D8E0;
+    --canvas:#F1F1F4; --surface:#FFFFFF; --surface-2:#FAFAFC;
+    --indigo:#4F46E5; --indigo-deep:#322CA8; --indigo-tint:#EEEDFD; --indigo-line:#D9D6FA;
+    --teal:#0E8B7E; --teal-tint:#E3F5F2;
+    --amber:#B45309; --amber-tint:#FBEFD9;
+    --font-display:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-body:'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --radius:14px; --radius-sm:9px;
+    --shadow-sm:0 1px 2px rgba(20,20,30,.05), 0 1px 1px rgba(20,20,30,.04);
+    --shadow:0 6px 20px -6px rgba(20,20,35,.14), 0 2px 6px rgba(20,20,35,.06);
+    --shadow-lg:0 24px 60px -18px rgba(20,20,40,.28), 0 8px 20px -10px rgba(20,20,40,.14);
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+  body{
+    margin:0; background:var(--canvas); color:var(--ink);
+    font-family:var(--font-body); font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3,h4{font-family:var(--font-display); font-weight:600; line-height:1.12; letter-spacing:-.012em; margin:0;}
+  p{margin:0 0 1em} a{color:var(--indigo-deep)}
+  .mono{font-family:var(--font-mono); font-variant-ligatures:none;}
+  ::selection{background:var(--brand-tint2); color:var(--brand-deep)}
+
+  /* ---------- top bar ---------- */
+  .site-head{
+    position:sticky; top:0; z-index:60; background:rgba(255,255,255,.86);
+    backdrop-filter:saturate(1.2) blur(10px); border-bottom:1px solid var(--line);
+  }
+  .site-head__in{max-width:var(--maxw); margin:0 auto; padding:13px 22px; display:flex; align-items:center; gap:14px;}
+  .brandmark{display:flex; align-items:center; gap:11px; text-decoration:none; color:var(--ink);}
+  .brandmark__logo{
+    width:34px; height:34px; border-radius:9px; background:var(--brand); color:#fff;
+    display:grid; place-items:center; font-family:var(--font-display); font-weight:700; font-size:19px;
+    box-shadow:0 3px 8px -2px rgba(225,37,27,.5); flex:none;
+  }
+  .brandmark__txt{display:flex; flex-direction:column; line-height:1.05}
+  .brandmark__name{font-family:var(--font-display); font-weight:700; font-size:17px; letter-spacing:-.02em}
+  .brandmark__name b{color:var(--brand)}
+  .brandmark__sub{font-size:11px; color:var(--muted); font-weight:500; letter-spacing:.02em}
+  .head-spacer{flex:1}
+  .head-badge{
+    display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--line-strong); padding:6px 11px; border-radius:999px;
+  }
+  .head-badge .dot{width:7px;height:7px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px #16a34a22}
+  .menu-btn{display:none; margin-left:auto; background:var(--surface); border:1px solid var(--line-strong);
+    width:40px;height:40px;border-radius:10px; cursor:pointer; align-items:center; justify-content:center;}
+  .menu-btn span,.menu-btn span::before,.menu-btn span::after{content:""; display:block; width:17px; height:2px; background:var(--ink); position:relative; border-radius:2px}
+  .menu-btn span::before{position:absolute; top:-5px} .menu-btn span::after{position:absolute; top:5px}
+
+  /* ---------- layout ---------- */
+  .layout{max-width:var(--maxw); margin:0 auto; padding:0 22px; display:grid; grid-template-columns:248px 1fr; gap:40px; align-items:start;}
+  .sidenav{position:sticky; top:74px; align-self:start; padding:26px 0; max-height:calc(100vh - 74px); overflow:auto;}
+  .sidenav__group{margin-bottom:22px}
+  .sidenav__label{font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); padding:0 12px; margin-bottom:9px;}
+  .sidenav a{
+    display:flex; align-items:center; gap:9px; text-decoration:none; color:var(--ink-2);
+    font-size:13.5px; font-weight:500; padding:7px 12px; border-radius:8px; border-left:2px solid transparent; transition:.15s;
+  }
+  .sidenav a:hover{background:var(--surface); color:var(--ink)}
+  .sidenav a.active{background:var(--indigo-tint); color:var(--indigo-deep); border-left-color:var(--indigo); font-weight:600}
+  .sidenav a .ix{font-family:var(--font-mono); font-size:11px; color:var(--faint); min-width:22px}
+  .sidenav a.active .ix{color:var(--indigo)}
+
+  .content{padding:30px 0 60px; min-width:0}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; background:linear-gradient(168deg,#1b1b22 0%, #25232e 52%, #2c2230 100%);
+    border-radius:22px; padding:46px 44px 38px; color:#fff; overflow:hidden; box-shadow:var(--shadow-lg);
+  }
+  .hero::after{content:""; position:absolute; inset:0; background:
+    radial-gradient(620px 320px at 88% -10%, rgba(225,37,27,.30), transparent 60%),
+    radial-gradient(560px 340px at -8% 120%, rgba(79,70,229,.26), transparent 60%);
+    pointer-events:none;}
+  .hero__eyebrow{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; font-weight:600; letter-spacing:.04em;
+    color:#ffd9d6; background:rgba(225,37,27,.18); border:1px solid rgba(225,37,27,.4); padding:6px 13px; border-radius:999px; position:relative; z-index:2;}
+  .hero h1{font-size:clamp(30px,4.4vw,46px); margin:18px 0 0; position:relative; z-index:2; max-width:18ch}
+  .hero h1 .hl{color:#ff7a72}
+  .hero__lede{margin:15px 0 0; font-size:clamp(15px,1.5vw,17.5px); color:#cfcfdb; max-width:60ch; position:relative; z-index:2}
+  .hero__meta{display:flex; flex-wrap:wrap; gap:9px; margin-top:22px; position:relative; z-index:2}
+  .hero__chip{font-size:12.5px; font-weight:500; color:#e6e6f0; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); padding:6px 12px; border-radius:8px}
+  .hero__chip b{color:#fff; font-weight:600}
+
+  /* hero cycle timeline (signature) */
+  .cycle{margin-top:30px; position:relative; z-index:2; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:20px 20px 16px;}
+  .cycle__top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; flex-wrap:wrap}
+  .cycle__title{font-family:var(--font-display); font-weight:600; font-size:14px; color:#fff; letter-spacing:.01em}
+  .toggle{display:inline-flex; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:3px; gap:2px}
+  .toggle button{font-family:var(--font-body); font-size:12.5px; font-weight:600; color:#c9c9d6; background:transparent; border:0; padding:6px 14px; border-radius:999px; cursor:pointer; transition:.18s}
+  .toggle button[aria-pressed="true"]{background:#fff; color:#1b1b22}
+  .cycle__svg{width:100%; height:auto; display:block; margin-top:8px}
+  .cycle__cap{font-size:12.5px; color:#bdbdcb; margin-top:6px}
+  .cycle__cap b{color:#ff9a93}
+
+  /* ---------- section scaffolding ---------- */
+  .section{margin-top:54px; scroll-margin-top:84px}
+  .sec-head{display:flex; align-items:flex-start; gap:16px; margin-bottom:22px}
+  .sec-kicker{font-family:var(--font-mono); font-size:12px; font-weight:700; color:#fff; background:var(--brand);
+    padding:7px 11px; border-radius:9px; letter-spacing:.02em; flex:none; box-shadow:0 3px 8px -3px rgba(225,37,27,.5)}
+  .sec-kicker.alt{background:var(--indigo); box-shadow:0 3px 8px -3px rgba(79,70,229,.5)}
+  .sec-kicker.dark{background:var(--ink)}
+  .sec-head__txt h2{font-size:clamp(23px,2.8vw,31px)}
+  .sec-head__txt p{margin:7px 0 0; color:var(--muted); font-size:15.5px; max-width:66ch}
+
+  .lead-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:24px 26px; box-shadow:var(--shadow-sm)}
+  .lead-card p:last-child{margin-bottom:0}
+
+  /* pipeline diagram */
+  .pipe{display:block; width:100%; height:auto; margin-top:6px}
+
+  /* concept grid */
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:20px}
+  .ccard{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden}
+  .ccard__tag{display:inline-flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:.04em; padding:5px 9px; border-radius:7px; margin-bottom:12px}
+  .ccard.sub .ccard__tag{background:var(--indigo-tint); color:var(--indigo-deep)}
+  .ccard.inst .ccard__tag{background:var(--brand-tint); color:var(--brand-deep)}
+  .ccard h3{font-size:19px; margin-bottom:6px}
+  .ccard p{font-size:14.5px; color:var(--ink-2); margin-bottom:12px}
+  .ccard__eg{font-size:13px; color:var(--muted); border-top:1px dashed var(--line-strong); padding-top:11px; margin-top:auto}
+  .ccard__eg b{color:var(--ink)}
+
+  /* ---------- step blocks ---------- */
+  .steps{position:relative; margin-top:8px}
+  .steps::before{content:""; position:absolute; left:18px; top:14px; bottom:14px; width:2px;
+    background:linear-gradient(var(--indigo-line), var(--line) 80%); z-index:0}
+  .step{position:relative; padding-left:58px; margin-bottom:30px}
+  .step__num{position:absolute; left:0; top:0; width:38px; height:38px; border-radius:11px; background:var(--surface);
+    border:1px solid var(--line-strong); display:grid; place-items:center; font-family:var(--font-display); font-weight:700;
+    font-size:15px; color:var(--indigo-deep); box-shadow:var(--shadow-sm); z-index:1}
+  .step.brand .step__num{color:var(--brand-deep)}
+  .step__card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden}
+  .step__grid{display:grid; grid-template-columns:1fr 1.02fr; gap:0}
+  .step__txt{padding:24px 26px}
+  .step__eyebrow{font-family:var(--font-mono); font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--indigo)}
+  .step.brand .step__eyebrow{color:var(--brand)}
+  .step__txt h3{font-size:20px; margin:8px 0 0}
+  .step__txt .body{margin-top:11px; font-size:14.8px; color:var(--ink-2)}
+  .step__txt .body p:last-child{margin-bottom:0}
+  .step__media{background:var(--surface-2); border-left:1px solid var(--line); padding:22px; display:flex; align-items:center; justify-content:center}
+
+  .fieldnote{font-size:13px; color:var(--muted); margin-top:14px; padding-left:14px; border-left:3px solid var(--line-strong)}
+  .fieldnote b{color:var(--ink)}
+
+  /* callouts */
+  .callout{display:flex; gap:12px; padding:13px 15px; border-radius:11px; font-size:13.6px; margin-top:14px; line-height:1.5}
+  .callout__i{flex:none; width:24px; height:24px; border-radius:7px; display:grid; place-items:center; font-weight:700; font-size:13px; margin-top:1px}
+  .callout p{margin:0}
+  .callout b{font-weight:600}
+  .callout.tip{background:var(--teal-tint); color:#0a5b52} .callout.tip .callout__i{background:var(--teal); color:#fff}
+  .callout.warn{background:var(--amber-tint); color:#8a4308} .callout.warn .callout__i{background:var(--amber); color:#fff}
+  .callout.note{background:var(--indigo-tint); color:var(--indigo-deep)} .callout.note .callout__i{background:var(--indigo); color:#fff}
+
+  /* ---------- UI mockup frame ---------- */
+  .ui{width:100%; max-width:430px; background:var(--surface); border:1px solid var(--line-strong); border-radius:13px; box-shadow:var(--shadow); overflow:hidden; font-size:12.5px}
+  .ui__bar{display:flex; align-items:center; gap:7px; padding:9px 12px; background:#fbfbfd; border-bottom:1px solid var(--line)}
+  .ui__dot{width:9px;height:9px;border-radius:50%} .d1{background:#ff5f57} .d2{background:#febc2e} .d3{background:#28c840}
+  .ui__url{flex:1; margin-left:6px; background:#fff; border:1px solid var(--line); border-radius:7px; padding:4px 9px; font-family:var(--font-mono); font-size:10.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ui__app{display:flex}
+  .ui__nav{width:96px; flex:none; background:#fbfafc; border-right:1px solid var(--line); padding:11px 8px}
+  .ui__brand{display:flex; align-items:center; gap:6px; margin-bottom:13px; padding:0 3px}
+  .ui__brand i{width:18px;height:18px;border-radius:5px;background:var(--brand); color:#fff; display:grid; place-items:center; font-style:normal; font-weight:700; font-size:11px; font-family:var(--font-display)}
+  .ui__brand span{font-family:var(--font-display); font-weight:700; font-size:11.5px; letter-spacing:-.02em}
+  .ui__navitem{display:flex; align-items:center; gap:7px; padding:6px 7px; border-radius:7px; color:var(--muted); font-size:11px; font-weight:500; margin-bottom:2px}
+  .ui__navitem .g{width:13px;height:13px;border-radius:4px;background:#e4e4ee; flex:none}
+  .ui__navitem.on{background:var(--brand-tint); color:var(--brand-deep); font-weight:600}
+  .ui__navitem.on .g{background:var(--brand)}
+  .ui__body{flex:1; padding:14px; min-width:0}
+  .ui__crumb{font-size:10px; color:var(--faint); margin-bottom:9px; font-weight:500}
+  .ui__crumb b{color:var(--ink-2)}
+  .ui__h{font-family:var(--font-display); font-weight:700; font-size:14.5px; margin-bottom:12px; letter-spacing:-.01em}
+  .fld{margin-bottom:10px}
+  .fld__l{font-size:10.5px; font-weight:600; color:var(--ink-2); margin-bottom:4px; display:flex; align-items:center; gap:5px}
+  .fld__l .req{color:var(--brand); font-weight:700}
+  .fld__in{background:#fff; border:1px solid var(--line-strong); border-radius:7px; padding:7px 9px; font-family:var(--font-mono); font-size:11px; color:var(--ink); display:flex; align-items:center; justify-content:space-between; gap:6px}
+  .fld__in.ph{color:var(--faint)}
+  .fld__in .unit{color:var(--muted); font-family:var(--font-body); font-size:10.5px}
+  .fld__in .chev{color:var(--faint)}
+  .fld__row{display:flex; gap:9px} .fld__row .fld{flex:1}
+  .fld__hint{font-size:10px; color:var(--faint); margin-top:3px}
+  .ui__btn{display:inline-flex; align-items:center; gap:6px; background:var(--brand); color:#fff; font-family:var(--font-body); font-weight:600; font-size:11.5px; padding:8px 14px; border-radius:8px; border:0; margin-top:4px; box-shadow:0 3px 8px -3px rgba(225,37,27,.45)}
+  .ui__btn.ghost{background:#fff; color:var(--ink-2); border:1px solid var(--line-strong); box-shadow:none}
+  .ui__btnrow{display:flex; gap:8px}
+  .seg{display:flex; gap:6px; margin-bottom:10px}
+  .seg__o{flex:1; text-align:center; border:1px solid var(--line-strong); border-radius:8px; padding:8px 6px; font-size:10.5px; font-weight:600; color:var(--muted); background:#fff}
+  .seg__o.on{border-color:var(--brand); background:var(--brand-tint); color:var(--brand-deep)}
+  .seg__o small{display:block; font-weight:500; font-size:9px; color:var(--faint); margin-top:2px}
+  .seg__o.on small{color:var(--brand-deep)}
+  .toglrow{display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid var(--line-strong); border-radius:8px; padding:8px 10px; font-size:11px; font-weight:600; color:var(--ink-2); margin-bottom:9px}
+  .swt{width:32px;height:18px;border-radius:999px;background:var(--brand); position:relative; flex:none}
+  .swt::after{content:"";position:absolute; top:2px; right:2px; width:14px;height:14px;border-radius:50%;background:#fff}
+  .swt.off{background:#d4d4dd}.swt.off::after{left:2px;right:auto}
+  .radio{display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line-strong); border-radius:8px; margin-bottom:7px; font-size:11px; font-weight:500; color:var(--ink-2)}
+  .radio .rb{width:15px;height:15px;border-radius:50%;border:2px solid var(--line-strong); flex:none}
+  .radio.on{border-color:var(--indigo); background:var(--indigo-tint); color:var(--indigo-deep); font-weight:600}
+  .radio.on .rb{border-color:var(--indigo); background:radial-gradient(circle at center, var(--indigo) 0 4px, #fff 5px)}
+  .radio.on.brand{border-color:var(--brand); background:var(--brand-tint); color:var(--brand-deep)}
+  .radio.on.brand .rb{border-color:var(--brand); background:radial-gradient(circle at center, var(--brand) 0 4px, #fff 5px)}
+  .radio small{margin-left:auto; font-family:var(--font-mono); font-size:10px; color:var(--faint); font-weight:500}
+
+  /* pricing explorer */
+  .px{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; margin-top:20px}
+  .px__tabs{display:flex; flex-wrap:wrap; gap:6px; padding:14px 16px; background:var(--surface-2); border-bottom:1px solid var(--line)}
+  .px__tab{font-family:var(--font-body); font-size:13px; font-weight:600; color:var(--ink-2); background:#fff; border:1px solid var(--line-strong); padding:8px 14px; border-radius:999px; cursor:pointer; transition:.15s}
+  .px__tab[aria-selected="true"]{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .px__body{display:grid; grid-template-columns:1.1fr 1fr; gap:0}
+  .px__txt{padding:22px 24px}
+  .px__txt h4{font-size:18px; margin-bottom:4px}
+  .px__txt .def{font-size:14.2px; color:var(--ink-2); margin-bottom:14px}
+  .px__eg{background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:13px 15px; font-size:13px}
+  .px__eg .ttl{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px}
+  .px__eg .calc{font-family:var(--font-mono); font-size:12.5px; color:var(--ink); line-height:1.8}
+  .px__eg .calc .r{color:var(--brand-deep); font-weight:700}
+  .px__viz{padding:22px; background:var(--surface-2); border-left:1px solid var(--line); display:flex; align-items:center; justify-content:center}
+  .px__viz svg{width:100%; height:auto; max-width:280px}
+
+  /* summary table */
+  .vs{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); margin-top:8px}
+  .vs__row{display:grid; grid-template-columns:0.9fr 1.1fr 1.1fr; border-bottom:1px solid var(--line)}
+  .vs__row:last-child{border-bottom:0}
+  .vs__row>div{padding:15px 18px; font-size:14px}
+  .vs__row .vh{font-weight:600; color:var(--ink); background:var(--surface-2); font-size:13px; display:flex; align-items:center}
+  .vs__head>div{background:var(--ink); color:#fff; font-family:var(--font-display); font-weight:600; font-size:14.5px}
+  .vs__head .vh{background:var(--ink); color:#fff}
+  .vs__head .vsub{background:var(--indigo)} .vs__head .vinst{background:var(--brand)}
+  .vs__row .a{color:var(--ink-2)} .vs__row .a b{color:var(--indigo-deep)}
+  .vs__row .b{color:var(--ink-2)} .vs__row .b b{color:var(--brand-deep)}
+
+  /* customer flow strip */
+  .flow{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:8px}
+  .fstep{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow-sm); position:relative}
+  .fstep__n{font-family:var(--font-mono); font-size:11px; font-weight:700; color:#fff; background:var(--indigo); width:24px;height:24px;border-radius:7px; display:grid; place-items:center; margin-bottom:10px}
+  .fstep h4{font-size:14.5px; margin-bottom:5px}
+  .fstep p{font-size:12.8px; color:var(--muted); margin:0}
+
+  /* checklist */
+  .check{background:linear-gradient(160deg,#1d1d25,#2a2230); border-radius:18px; padding:30px 32px; color:#fff; box-shadow:var(--shadow-lg); margin-top:8px; position:relative; overflow:hidden}
+  .check::after{content:"";position:absolute; inset:0; background:radial-gradient(500px 240px at 100% 0, rgba(79,70,229,.28), transparent 60%); pointer-events:none}
+  .check h3{font-size:22px; margin-bottom:4px; position:relative; z-index:2}
+  .check>p{color:#bcbcca; font-size:14.5px; margin-bottom:18px; position:relative; z-index:2}
+  .check__list{display:grid; grid-template-columns:1fr 1fr; gap:10px 22px; position:relative; z-index:2}
+  .ci{display:flex; gap:11px; align-items:flex-start; font-size:14px; color:#e7e7f0}
+  .ci .bx{flex:none; width:22px;height:22px;border-radius:6px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); display:grid; place-items:center; color:#7be0a4; font-size:13px; font-weight:700; margin-top:1px}
+  .ci b{color:#fff; font-weight:600}
+
+  /* misc */
+  .kbd{font-family:var(--font-mono); font-size:.86em; background:var(--surface); border:1px solid var(--line-strong); border-bottom-width:2px; border-radius:6px; padding:1px 6px; color:var(--ink); white-space:nowrap}
+  .copybtn{display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:12.5px; background:var(--ink); color:#fff; border:0; padding:9px 13px; border-radius:9px; cursor:pointer; margin-top:8px}
+  .copybtn .u{color:#9fa0ff}
+  footer.site-foot{max-width:var(--maxw); margin:30px auto 0; padding:24px 22px 50px; color:var(--muted); font-size:13px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
+  footer.site-foot b{color:var(--ink-2)}
+
+  :focus-visible{outline:3px solid var(--indigo); outline-offset:2px; border-radius:6px}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr; gap:0}
+    .sidenav{position:fixed; top:60px; left:0; bottom:0; width:262px; background:var(--surface); border-right:1px solid var(--line);
+      padding:20px 14px; transform:translateX(-105%); transition:transform .22s ease; z-index:55; box-shadow:var(--shadow-lg); max-height:none}
+    .sidenav.open{transform:translateX(0)}
+    .menu-btn{display:flex}
+    .content{padding-top:24px}
+    .step__grid, .px__body, .twocol{grid-template-columns:1fr}
+    .step__media{border-left:0; border-top:1px solid var(--line)}
+    .px__viz{border-left:0; border-top:1px solid var(--line)}
+    .flow{grid-template-columns:1fr 1fr}
+    .check__list{grid-template-columns:1fr}
+    .vs__row{grid-template-columns:1fr}
+    .vs__row .vh{border-bottom:1px solid var(--line)}
+    .vs__head{display:none}
+    .vs__row .a::before{content:"Recurring Subscription — "; color:var(--indigo-deep); font-weight:600}
+    .vs__row .b::before{content:"Recurring Installment — "; color:var(--brand-deep); font-weight:600}
+  }
+  @media (max-width:560px){
+    .hero{padding:30px 22px 26px} .step{padding-left:46px} .steps::before{left:14px}
+    .step__num{width:32px;height:32px;border-radius:9px;font-size:13px}
+    .flow{grid-template-columns:1fr}
+    .site-head__in{padding:11px 16px} .layout{padding:0 16px}
+  }
+  .navmask{display:none; position:fixed; inset:60px 0 0 0; background:rgba(15,15,25,.4); z-index:54}
+  .navmask.show{display:block}
+</style>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="site-head__in">
+    <a class="brandmark" href="#top">
+      <span class="brandmark__logo">F</span>
+      <span class="brandmark__txt">
+        <span class="brandmark__name">Flexi<b>Bill</b></span>
+        <span class="brandmark__sub">by DOKU · Subscription &amp; Billing</span>
+      </span>
+    </a>
+    <span class="head-spacer"></span>
+    <span class="head-badge"><span class="dot"></span>Merchant Guide · Malaysia</span>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu"><span></span></button>
+  </div>
+</header>
+
+<div class="navmask" id="navmask"></div>
+
+<div class="layout" id="top">
+  <!-- ============ SIDE NAV ============ -->
+  <aside class="sidenav" id="sidenav">
+    <div class="sidenav__group">
+      <div class="sidenav__label">Start here</div>
+      <a href="#overview"><span class="ix">·</span> Overview</a>
+      <a href="#how"><span class="ix">·</span> How FlexiBill works</a>
+      <a href="#collection"><span class="ix">0</span> Create a Collection</a>
+    </div>
+    <div class="sidenav__group">
+      <div class="sidenav__label">A · Recurring Subscription</div>
+      <a href="#a1"><span class="ix">1</span> Name, description, image</a>
+      <a href="#a2"><span class="ix">2</span> Pricing model</a>
+      <a href="#a3"><span class="ix">3</span> Create the price</a>
+      <a href="#a4"><span class="ix">4</span> Billing cycle &amp; interval</a>
+      <a href="#a5"><span class="ix">5</span> Date of billing</a>
+      <a href="#a6"><span class="ix">6</span> Duration · Unlimited</a>
+      <a href="#a7"><span class="ix">7</span> Build the Pricing Table</a>
+      <a href="#a8"><span class="ix">8</span> Get the share URL</a>
+    </div>
+    <div class="sidenav__group">
+      <div class="sidenav__label">B · Recurring Installment</div>
+      <a href="#installment"><span class="ix">B</span> The one change</a>
+      <a href="#compare"><span class="ix">=</span> Side by side</a>
+    </div>
+    <div class="sidenav__group">
+      <div class="sidenav__label">Finish</div>
+      <a href="#customer"><span class="ix">·</span> What customers see</a>
+      <a href="#checklist"><span class="ix">·</span> Launch checklist</a>
+    </div>
+  </aside>
+
+  <!-- ============ CONTENT ============ -->
+  <main class="content">
+
+    <!-- HERO -->
+    <section class="hero">
+      <span class="hero__eyebrow">🇲🇾 FlexiBill for Malaysia · Step-by-step</span>
+      <h1>Set up <span class="hl">recurring billing</span> that runs on its own.</h1>
+      <p class="hero__lede">A plain-language guide for merchants. Create a <b>Recurring Subscription</b> (bills forever until you stop it) or a <b>Recurring Installment</b> (bills a fixed number of times, then stops) — and share one link your customers can subscribe through.</p>
+      <div class="hero__meta">
+        <span class="hero__chip">Path: <b>Subscription &amp; Billing → Collection → Plan → Pricing Table</b></span>
+        <span class="hero__chip">Currency: <b>RM (MYR)</b></span>
+        <span class="hero__chip"><b>8 steps</b> + 1 setting changes everything</span>
+      </div>
+
+      <div class="cycle">
+        <div class="cycle__top">
+          <span class="cycle__title">The only real difference between the two</span>
+          <span class="toggle" role="group" aria-label="Choose billing type to preview">
+            <button id="tSub" aria-pressed="true">Recurring Subscription</button>
+            <button id="tInst" aria-pressed="false">Recurring Installment</button>
+          </span>
+        </div>
+        <svg class="cycle__svg" id="cycleSvg" viewBox="0 0 760 120" role="img" aria-label="Billing timeline">
+          <!-- baseline -->
+          <line x1="20" y1="74" x2="740" y2="74" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
+          <g id="tickets"></g>
+          <g id="cycleEnd"></g>
+        </svg>
+        <p class="cycle__cap" id="cycleCap">A subscription keeps generating a new bill every cycle — <b>no end date</b> — until you cancel it.</p>
+      </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section class="section" id="overview">
+      <div class="sec-head">
+        <span class="sec-kicker dark">i</span>
+        <div class="sec-head__txt">
+          <h2>What you'll build</h2>
+          <p>FlexiBill handles the whole customer lifecycle for you — recurring billing, renewals and memberships — and sends each invoice automatically. You set the rules once; FlexiBill raises the bills on schedule.</p>
+        </div>
+      </div>
+      <div class="lead-card">
+        <p>This guide covers the <b>self-serve subscription</b> setup: you create a plan, FlexiBill gives you a <b>Pricing Table</b> (a ready-made page), and you share its link. Customers pick a plan, enter their details, and turn on auto-debit — every future bill then collects on its own.</p>
+        <p style="margin-bottom:0">You will do everything from one menu in the DOKU dashboard: <span class="kbd">Subscription &amp; Billing</span> under <b>FlexiBill</b>. If you don't see it yet, activate FlexiBill first (a registered <b>Business</b> account that has completed verification — personal accounts can't activate it).</p>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <div class="sec-head">
+        <span class="sec-kicker dark">i</span>
+        <div class="sec-head__txt">
+          <h2>How FlexiBill fits together</h2>
+          <p>Four things, in order. Each one lives inside the one before it — like folders inside folders.</p>
+        </div>
+      </div>
+
+      <svg class="pipe" viewBox="0 0 980 188" role="img" aria-label="Collection contains Plans, a Pricing Table presents plans, customers subscribe, bills generate on a cycle">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#9A9AA6"/>
+          </marker>
+        </defs>
+        <!-- 1 Collection -->
+        <rect x="8" y="40" width="206" height="108" rx="14" fill="#EEEDFD" stroke="#D9D6FA"/>
+        <text x="24" y="34" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#4F46E5">STEP 0</text>
+        <text x="24" y="68" font-family="Space Grotesk, sans-serif" font-size="17" font-weight="700" fill="#17171C">Collection</text>
+        <text x="24" y="92" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">A container for your</text>
+        <text x="24" y="110" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">plans. Sets invoice</text>
+        <text x="24" y="128" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">term + grace period.</text>
+        <!-- arrow -->
+        <line x1="222" y1="94" x2="256" y2="94" stroke="#9A9AA6" stroke-width="2" marker-end="url(#arr)"/>
+        <!-- 2 Plan -->
+        <rect x="264" y="40" width="206" height="108" rx="14" fill="#FFFFFF" stroke="#E7E7ED"/>
+        <text x="280" y="34" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#E1251B">STEPS 1–6</text>
+        <text x="280" y="68" font-family="Space Grotesk, sans-serif" font-size="17" font-weight="700" fill="#17171C">Subscription Plan</text>
+        <text x="280" y="92" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">The product itself:</text>
+        <text x="280" y="110" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">name, price, cycle,</text>
+        <text x="280" y="128" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">and duration.</text>
+        <line x1="478" y1="94" x2="512" y2="94" stroke="#9A9AA6" stroke-width="2" marker-end="url(#arr)"/>
+        <!-- 3 Pricing Table -->
+        <rect x="520" y="40" width="206" height="108" rx="14" fill="#FFFFFF" stroke="#E7E7ED"/>
+        <text x="536" y="34" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#E1251B">STEPS 7–8</text>
+        <text x="536" y="68" font-family="Space Grotesk, sans-serif" font-size="17" font-weight="700" fill="#17171C">Pricing Table</text>
+        <text x="536" y="92" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">A shareable page that</text>
+        <text x="536" y="110" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">shows your plans and</text>
+        <text x="536" y="128" font-family="Inter, sans-serif" font-size="12.5" fill="#41414C">gives you a URL.</text>
+        <line x1="734" y1="94" x2="768" y2="94" stroke="#9A9AA6" stroke-width="2" marker-end="url(#arr)"/>
+        <!-- 4 Bills -->
+        <rect x="776" y="40" width="196" height="108" rx="14" fill="#17171C"/>
+        <text x="792" y="34" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#9A9AA6">RUNS ITSELF</text>
+        <text x="792" y="68" font-family="Space Grotesk, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">Bills on a cycle</text>
+        <text x="792" y="92" font-family="Inter, sans-serif" font-size="12.5" fill="#C9C9D6">Customer subscribes;</text>
+        <text x="792" y="110" font-family="Inter, sans-serif" font-size="12.5" fill="#C9C9D6">invoices generate &amp;</text>
+        <text x="792" y="128" font-family="Inter, sans-serif" font-size="12.5" fill="#C9C9D6">auto-collect.</text>
+      </svg>
+
+      <div class="twocol">
+        <div class="ccard sub">
+          <span class="ccard__tag">∞ &nbsp;NEVER ENDS</span>
+          <h3>A · Recurring Subscription</h3>
+          <p>Bills the same amount every cycle and renews forever — until you (or the customer) cancel. Perfect for memberships and ongoing services.</p>
+          <div class="ccard__eg"><b>Example:</b> FitHaus Studio monthly membership — <span class="mono">RM 150</span> every month, no end date.</div>
+        </div>
+        <div class="ccard inst">
+          <span class="ccard__tag">▣ &nbsp;STOPS AFTER N</span>
+          <h3>B · Recurring Installment</h3>
+          <p>Bills on the same cycle but stops automatically after a set number of bills. Perfect for splitting one price into equal payments.</p>
+          <div class="ccard__eg"><b>Example:</b> FitHaus Annual Pass — <span class="mono">RM 125</span> × <b>12 months</b>, then it stops on its own.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PART 0 — COLLECTION ============ -->
+    <section class="section" id="collection">
+      <div class="sec-head">
+        <span class="sec-kicker alt">0</span>
+        <div class="sec-head__txt">
+          <h2>Before the plan: create a Collection</h2>
+          <p>A Collection is the box your plans live in. Make this first — your plan needs somewhere to go, and the Collection sets two rules that decide how long customers can act on each bill.</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <!-- 0.1–0.4 in one rich step card -->
+        <div class="step">
+          <span class="step__num">0</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Subscription &amp; Billing → Collection → Create</div>
+                <h3>Fill in four fields</h3>
+                <div class="body">
+                  <p>Open <span class="kbd">Subscription &amp; Billing</span>, go to <b>Collection</b>, and click <b>Create Collection</b>. Four things:</p>
+                  <p style="margin-bottom:8px"><b>1. Name of Collection</b> — what you'll recognise it by later, e.g. <span class="mono">FitHaus Memberships 2025</span>.</p>
+                  <p style="margin-bottom:8px"><b>2. Collection Description</b> — a short note on what's inside.</p>
+                  <p style="margin-bottom:8px"><b>3. Collection Invoice Term</b> — how long the invoice link stays open for the customer to view and pay.</p>
+                  <p style="margin-bottom:0"><b>4. Grace Period</b> — how long the subscription keeps working <i>after</i> a bill is due but not yet paid, before it's treated as overdue.</p>
+                </div>
+                <div class="callout note">
+                  <span class="callout__i">=</span>
+                  <p><b>Invoice Term + Grace Period = how long the checkout link lives.</b> A customer's pay-now link expires based on these two settings. Set them once here and every bill in this Collection inherits them.</p>
+                </div>
+                <div class="callout tip">
+                  <span class="callout__i">✓</span>
+                  <p>A common, safe starting point for monthly plans: <b>Invoice Term 7 days</b>, <b>Grace Period 3 days</b>. Short enough to keep cash flow tight, long enough that customers aren't locked out over a weekend.</p>
+                </div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Create Collection screen mockup">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">dashboard.doku.com/flexibill/collection/new</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                      <div class="ui__navitem"><span class="g"></span>Reports</div>
+                      <div class="ui__navitem"><span class="g"></span>Settings</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">Collection / <b>Create Collection</b></div>
+                      <div class="ui__h">New Collection</div>
+                      <div class="fld"><div class="fld__l">Name of Collection <span class="req">*</span></div>
+                        <div class="fld__in">FitHaus Memberships 2025</div></div>
+                      <div class="fld"><div class="fld__l">Description</div>
+                        <div class="fld__in ph">All membership &amp; pass plans</div></div>
+                      <div class="fld__row">
+                        <div class="fld"><div class="fld__l">Invoice Term <span class="req">*</span></div>
+                          <div class="fld__in">7 <span class="unit">days</span></div>
+                          <div class="fld__hint">Link stays open this long</div></div>
+                        <div class="fld"><div class="fld__l">Grace Period <span class="req">*</span></div>
+                          <div class="fld__in">3 <span class="unit">days</span></div>
+                          <div class="fld__hint">Access kept while unpaid</div></div>
+                      </div>
+                      <button class="ui__btn">Save Collection</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PART A — RECURRING SUBSCRIPTION ============ -->
+    <section class="section" id="parta">
+      <div class="sec-head">
+        <span class="sec-kicker">A</span>
+        <div class="sec-head__txt">
+          <h2>Create a Recurring Subscription</h2>
+          <p>Now the plan itself. Inside your Collection, click <b>Create Subscription Plan</b> and walk through these eight steps. We'll build <b>FitHaus Studio — Monthly Membership</b> as we go.</p>
+        </div>
+      </div>
+
+      <div class="steps">
+
+        <!-- STEP 1 -->
+        <div class="step brand" id="a1">
+          <span class="step__num">1</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 1 · Identity</div>
+                <h3>Name, description &amp; image</h3>
+                <div class="body">
+                  <p>Give the plan a clear <b>name</b> and a short <b>description</b> — this is exactly what customers read on the Pricing Table, so write it for them, not for your internal records.</p>
+                  <p style="margin-bottom:0">Upload an <b>image</b> too (your logo or a product photo). A plan with a picture looks trustworthy and converts better.</p>
+                </div>
+                <div class="callout tip"><span class="callout__i">✓</span>
+                  <p>Name the benefit, not the SKU: <b>"Monthly Membership — Unlimited Classes"</b> beats <span class="mono">PLAN-FH-001</span>.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Create subscription plan — identity">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/collection/fithaus/plan/new</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                      <div class="ui__navitem"><span class="g"></span>Reports</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">FitHaus Memberships / <b>New Plan</b></div>
+                      <div class="ui__h">Plan details</div>
+                      <div class="fld"><div class="fld__l">Image</div>
+                        <div class="fld__in" style="justify-content:flex-start; gap:8px"><span style="width:26px;height:26px;border-radius:6px;background:var(--brand-tint);display:grid;place-items:center;color:var(--brand);font-weight:700;font-family:var(--font-display)">FH</span><span class="unit">Upload logo / photo</span></div></div>
+                      <div class="fld"><div class="fld__l">Subscription Name <span class="req">*</span></div>
+                        <div class="fld__in">Monthly Membership — Unlimited</div></div>
+                      <div class="fld"><div class="fld__l">Description</div>
+                        <div class="fld__in" style="font-family:var(--font-body);font-size:10.5px;color:var(--ink-2)">All classes, all branches. Cancel anytime.</div></div>
+                      <button class="ui__btn ghost">Next: Pricing</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step brand" id="a2">
+          <span class="step__num">2</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 2 · Pricing model</div>
+                <h3>Pick how the price is calculated</h3>
+                <div class="body">
+                  <p>FlexiBill offers five pricing models. Most memberships are simply <b>Flat</b>. The others matter when price depends on <b>quantity</b> (seats, licences, members).</p>
+                  <p style="margin-bottom:0">Tap each one in the explorer below to see what it means and a worked RM example. Then pick the one that matches how you charge.</p>
+                </div>
+                <div class="callout note"><span class="callout__i">i</span>
+                  <p><b>Not sure?</b> Choose <b>Flat</b>. One fixed price per cycle, regardless of quantity — the right answer for the vast majority of subscriptions.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Pricing model selector">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/plan/new · pricing model</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">New Plan / <b>Pricing model</b></div>
+                      <div class="ui__h">How is this priced?</div>
+                      <div class="radio on brand"><span class="rb"></span>Flat <small>one price</small></div>
+                      <div class="radio"><span class="rb"></span>Unit (per unit) <small>price × qty</small></div>
+                      <div class="radio"><span class="rb"></span>Volume <small>bracket × qty</small></div>
+                      <div class="radio"><span class="rb"></span>Tiered <small>cumulative</small></div>
+                      <div class="radio"><span class="rb"></span>Stairstep <small>flat per step</small></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- pricing explorer (interactive) -->
+        <div style="padding-left:58px">
+          <div class="px" id="px">
+            <div class="px__tabs" role="tablist" aria-label="Pricing models">
+              <button class="px__tab" role="tab" data-m="flat" aria-selected="true">Flat</button>
+              <button class="px__tab" role="tab" data-m="unit" aria-selected="false">Unit</button>
+              <button class="px__tab" role="tab" data-m="volume" aria-selected="false">Volume</button>
+              <button class="px__tab" role="tab" data-m="tiered" aria-selected="false">Tiered</button>
+              <button class="px__tab" role="tab" data-m="stairstep" aria-selected="false">Stairstep</button>
+            </div>
+            <div class="px__body">
+              <div class="px__txt">
+                <h4 id="pxTitle">Flat pricing</h4>
+                <p class="def" id="pxDef">One fixed price per billing cycle, no matter the quantity. The simplest model — and the right choice for most memberships and subscriptions.</p>
+                <div class="px__eg">
+                  <div class="ttl">Worked example · RM</div>
+                  <div class="calc" id="pxCalc">Membership = <span class="r">RM 150.00</span> / month<br>Quantity doesn't change the price.</div>
+                </div>
+              </div>
+              <div class="px__viz" id="pxViz"><!-- svg injected --></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step brand" id="a3">
+          <span class="step__num">3</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 3 · Amount</div>
+                <h3>Create the price</h3>
+                <div class="body">
+                  <p>Enter the actual <b>amount</b> and set the currency to <b>MYR (RM)</b>. For a Flat membership that's a single number, e.g. <span class="mono">RM 150.00</span>.</p>
+                  <p style="margin-bottom:0">If you chose a quantity-based model in Step 2, you'll enter the brackets here instead (e.g. 1–5 seats at one rate, 6+ at another).</p>
+                </div>
+                <div class="callout warn"><span class="callout__i">!</span>
+                  <p><b>Check the currency before saving.</b> Malaysian plans must be <span class="mono">MYR</span>. Amounts are in Ringgit — <span class="mono">RM 150</span>, not sen.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Create price">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/plan/new · price</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">New Plan / <b>Create price</b></div>
+                      <div class="ui__h">Set the price</div>
+                      <div class="fld__row">
+                        <div class="fld" style="flex:0 0 86px"><div class="fld__l">Currency <span class="req">*</span></div>
+                          <div class="fld__in">MYR <span class="chev">▾</span></div></div>
+                        <div class="fld"><div class="fld__l">Amount <span class="req">*</span></div>
+                          <div class="fld__in"><span class="unit">RM</span>150.00</div></div>
+                      </div>
+                      <div class="fld"><div class="fld__l">Pricing model</div>
+                        <div class="fld__in" style="color:var(--brand-deep);font-weight:600">Flat</div></div>
+                      <button class="ui__btn ghost">Next: Billing cycle</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step brand" id="a4">
+          <span class="step__num">4</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 4 · Cadence</div>
+                <h3>Billing cycle &amp; interval</h3>
+                <div class="body">
+                  <p>Set <b>Billing Cycle</b> to <b>Recurring</b> — this is what tells FlexiBill to keep raising bills instead of charging once.</p>
+                  <p style="margin-bottom:0">Then choose the <b>Billing Interval</b> — how often a bill is raised: <b>Daily</b>, <b>Weekly</b>, or <b>Custom</b> (e.g. every 30 days, every 3 months, yearly). For FitHaus we'll bill <b>monthly</b>.</p>
+                </div>
+                <div class="callout note"><span class="callout__i">i</span>
+                  <p>The interval is the heartbeat of the plan. A <span class="mono">Monthly</span> interval means a fresh invoice — with a new invoice number — is generated every month on the billing date.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Billing cycle and interval">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/plan/new · cycle</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">New Plan / <b>Billing cycle</b></div>
+                      <div class="ui__h">Billing cycle</div>
+                      <div class="seg">
+                        <div class="seg__o">One-off<small>charge once</small></div>
+                        <div class="seg__o on">Recurring<small>repeat</small></div>
+                      </div>
+                      <div class="fld__l" style="margin-top:4px">Billing interval <span class="req">*</span></div>
+                      <div class="seg">
+                        <div class="seg__o">Daily</div>
+                        <div class="seg__o">Weekly</div>
+                        <div class="seg__o on">Custom<small>monthly</small></div>
+                      </div>
+                      <div class="fld"><div class="fld__l">Every</div>
+                        <div class="fld__in">1 <span class="unit">month</span></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step brand" id="a5">
+          <span class="step__num">5</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 5 · Start</div>
+                <h3>Select the date of billing</h3>
+                <div class="body">
+                  <p>Choose when the first bill goes out and which day each cycle lands on. You can bill on a <b>fixed interval</b> from the start date, or on a <b>specific calendar date</b> (e.g. the 1st of every month, regardless of when the customer joined).</p>
+                  <p style="margin-bottom:0">Pick the start date — for us, <span class="mono">2025-07-01</span>.</p>
+                </div>
+                <div class="callout warn"><span class="callout__i">!</span>
+                  <p><b>Don't set a start date in the past.</b> The billing date must be on or after today. Use the format <span class="mono">YYYY-MM-DD</span>.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Date of billing">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/plan/new · schedule</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">New Plan / <b>Date of billing</b></div>
+                      <div class="ui__h">When does it bill?</div>
+                      <div class="radio on brand"><span class="rb"></span>Fixed interval from start</div>
+                      <div class="radio"><span class="rb"></span>Specific date each cycle <small>e.g. 1st</small></div>
+                      <div class="fld" style="margin-top:6px"><div class="fld__l">Start date <span class="req">*</span></div>
+                        <div class="fld__in">2025-07-01 <span class="chev">📅</span></div>
+                        <div class="fld__hint">Format YYYY-MM-DD · not before today</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6 -->
+        <div class="step brand" id="a6">
+          <span class="step__num">6</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 6 · Duration — the deciding setting</div>
+                <h3>Set duration to <span style="color:var(--indigo-deep)">Unlimited</span></h3>
+                <div class="body">
+                  <p>This single choice is what makes the plan a <b>subscription</b>. Set the duration to <b>Unlimited</b> (sometimes shown as <i>Never ends</i>).</p>
+                  <p style="margin-bottom:0">FlexiBill will keep generating a new bill every cycle, with no stop date, until you cancel the subscription manually.</p>
+                </div>
+                <div class="callout note"><span class="callout__i">∞</span>
+                  <p><b>Remember this screen.</b> It's the <i>only</i> place Recurring Subscription and Recurring Installment differ. Part B comes back to exactly this field.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Duration unlimited">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/plan/new · duration</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem"><span class="g"></span>Home</div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">New Plan / <b>Duration</b></div>
+                      <div class="ui__h">How long should it run?</div>
+                      <div class="radio on"><span class="rb"></span>Unlimited <small>never ends</small></div>
+                      <div class="radio"><span class="rb"></span>Ends on a specific date</div>
+                      <div class="radio"><span class="rb"></span>Ends after a number of bills</div>
+                      <div class="callout note" style="margin-top:12px;font-size:11px;padding:9px 11px">
+                        <span class="callout__i" style="width:18px;height:18px;font-size:11px">∞</span>
+                        <p>Bills forever until cancelled.</p></div>
+                      <button class="ui__btn">Save plan</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 7 -->
+        <div class="step brand" id="a7">
+          <span class="step__num">7</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 7 · Pricing Table → Collection → Create Pricing Table</div>
+                <h3>Build the Pricing Table</h3>
+                <div class="body">
+                  <p>Your plan is saved — now wrap it in a page customers can buy from. In <b>Subscription &amp; Billing → Collection</b>, click <b>Create Pricing Table</b>, then configure it:</p>
+                  <p style="margin-bottom:6px"><b>Name</b> it (unique). Pick the <b>Collection</b>, then <b>select the plans</b> to show — up to <b>10 plans</b> per table.</p>
+                  <p style="margin-bottom:6px"><b>Group by frequency</b> (Daily / Monthly / Yearly) and optionally <b>highlight one featured plan</b> (limit: one per table).</p>
+                  <p style="margin-bottom:6px"><b>Customise appearance</b> — title (max 50 chars), subtitle (max 256), button label (max 50), plus button &amp; font colours.</p>
+                  <p style="margin-bottom:0">Optionally add <b>coupons</b> (up to 10) and apply your pre-configured <b>tax</b>. Watch the <b>live preview</b> on the right update as you go.</p>
+                </div>
+                <div class="callout tip"><span class="callout__i">✓</span>
+                  <p>Match the <b>button colour</b> to your brand and keep the subtitle to one line on mobile. The live preview is the customer's real view — if it looks right there, it's right.</p></div>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Pricing table builder with live preview">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/collection/pricing-table/new</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                      <div class="ui__navitem"><span class="g"></span>Reports</div>
+                    </div>
+                    <div class="ui__body" style="display:flex;gap:10px;padding:11px">
+                      <div style="flex:1;min-width:0">
+                        <div class="ui__crumb"><b>Create Pricing Table</b></div>
+                        <div class="fld"><div class="fld__l">Table name <span class="req">*</span></div>
+                          <div class="fld__in" style="font-size:10px">FitHaus Plans</div></div>
+                        <div class="fld"><div class="fld__l">Collection <span class="req">*</span></div>
+                          <div class="fld__in" style="font-size:10px">FitHaus Memberships <span class="chev">▾</span></div></div>
+                        <div class="fld"><div class="fld__l">Plans <small style="color:var(--faint);font-weight:500">· up to 10</small></div>
+                          <div class="fld__in" style="font-size:10px;color:var(--brand-deep);font-weight:600">2 selected</div></div>
+                        <div class="toglrow" style="font-size:10px;padding:7px 9px">Group by frequency<span class="swt"></span></div>
+                        <div class="toglrow" style="font-size:10px;padding:7px 9px">Featured plan<span class="swt"></span></div>
+                        <div class="fld"><div class="fld__l">Button colour</div>
+                          <div class="fld__in" style="justify-content:flex-start;gap:7px"><span style="width:16px;height:16px;border-radius:4px;background:var(--brand)"></span><span class="unit" style="font-family:var(--font-mono)">#E1251B</span></div></div>
+                      </div>
+                      <div style="flex:0 0 118px">
+                        <div style="font-size:9px;font-weight:700;color:var(--faint);letter-spacing:.08em;margin-bottom:6px">LIVE PREVIEW</div>
+                        <div style="border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff;box-shadow:var(--shadow-sm)">
+                          <div style="width:24px;height:24px;border-radius:6px;background:var(--brand-tint);display:grid;place-items:center;color:var(--brand);font-weight:700;font-size:10px;font-family:var(--font-display);margin-bottom:6px">FH</div>
+                          <div style="font-family:var(--font-display);font-weight:700;font-size:10.5px">Monthly Membership</div>
+                          <div style="font-size:8.5px;color:var(--muted);margin:2px 0 6px">Unlimited classes</div>
+                          <div style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink)">RM 150<span style="font-size:8px;color:var(--muted);font-weight:500">/mo</span></div>
+                          <div style="background:var(--brand);color:#fff;text-align:center;font-size:8.5px;font-weight:600;padding:5px;border-radius:6px;margin-top:7px">Subscribe</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 8 -->
+        <div class="step brand" id="a8">
+          <span class="step__num">8</span>
+          <div class="step__card">
+            <div class="step__grid">
+              <div class="step__txt">
+                <div class="step__eyebrow">Step 8 · Integration → URL</div>
+                <h3>Get the share URL</h3>
+                <div class="body">
+                  <p>Save the table, then open it from the <b>Pricing Table list</b> (the <span class="kbd">⋮</span> menu → <b>See Details</b>). In the <b>Integration</b> tab you'll find your <b>direct URL</b> and an <b>embed code</b>.</p>
+                  <p style="margin-bottom:0"><b>Copy the URL</b> and share it — WhatsApp, email, social bio, or a button on your website. That link is your storefront for this product. You can re-copy it any time from the list, and monitor each table's <b>Status</b> there.</p>
+                </div>
+                <div class="callout tip"><span class="callout__i">✓</span>
+                  <p>The four detail tabs: <b>Integration</b> (URL + embed), <b>Plan</b> (what's included), <b>Appearance</b> (titles &amp; colours), <b>Additional Details</b> (coupons &amp; tax). Everything is editable later.</p></div>
+                <button class="copybtn" id="copyUrl" type="button" aria-label="Copy sample pricing table URL">
+                  <span>📋 Copy URL</span> <span class="u" id="copyTxt">pay.doku.com/flexibill/t/fithaus-plans</span>
+                </button>
+              </div>
+              <div class="step__media">
+                <div class="ui" aria-label="Pricing table detail — integration tab">
+                  <div class="ui__bar"><i class="ui__dot d1"></i><i class="ui__dot d2"></i><i class="ui__dot d3"></i>
+                    <span class="ui__url">…/pricing-table/fithaus-plans</span></div>
+                  <div class="ui__app">
+                    <div class="ui__nav">
+                      <div class="ui__brand"><i>F</i><span>FlexiBill</span></div>
+                      <div class="ui__navitem on"><span class="g"></span>Subs &amp; Billing</div>
+                    </div>
+                    <div class="ui__body">
+                      <div class="ui__crumb">Pricing Table / <b>FitHaus Plans</b></div>
+                      <div class="seg" style="margin-bottom:12px">
+                        <div class="seg__o on" style="font-size:9px">Integration</div>
+                        <div class="seg__o" style="font-size:9px">Plan</div>
+                        <div class="seg__o" style="font-size:9px">Appearance</div>
+                        <div class="seg__o" style="font-size:9px">Add'l</div>
+                      </div>
+                      <div class="fld"><div class="fld__l">Status</div>
+                        <div class="fld__in" style="justify-content:flex-start;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:#16a34a"></span><span style="color:#15803d;font-weight:600;font-family:var(--font-body);font-size:10.5px">Active</span></div></div>
+                      <div class="fld"><div class="fld__l">Direct URL</div>
+                        <div class="fld__in" style="font-size:9.5px">pay.doku.com/flexibill/t/fithaus-plans</div></div>
+                      <div class="fld"><div class="fld__l">Embed code</div>
+                        <div class="fld__in ph" style="font-size:9px">&lt;script src="…/embed.js"&gt;…</div></div>
+                      <div class="ui__btnrow">
+                        <button class="ui__btn">Copy URL</button>
+                        <button class="ui__btn ghost">Copy embed</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /steps -->
+    </section>
+
+    <!-- ============ PART B — INSTALLMENT ============ -->
+    <section class="section" id="installment">
+      <div class="sec-head">
+        <span class="sec-kicker">B</span>
+        <div class="sec-head__txt">
+          <h2>Create a Recurring Installment</h2>
+          <p>Good news: you already know how. A Recurring Installment is built with the <b>exact same eight steps</b> — Collection, name, pricing, price, recurring cycle, billing date, Pricing Table, URL. Only <b>Step 6 (Duration)</b> changes.</p>
+        </div>
+      </div>
+
+      <div class="lead-card" style="border-color:var(--brand-tint2);background:linear-gradient(180deg,#fff,#fffafa)">
+        <p style="font-size:16px"><b>The one change:</b> at Step 6, instead of <b>Unlimited</b>, choose <b style="color:var(--brand-deep)">"Ends after a specific number of bills"</b> and enter the count.</p>
+        <p style="margin-bottom:0">That's it. FlexiBill raises the bill on every cycle just like a subscription, but once it hits the number you set, it stops automatically — no need to remember to cancel. Use it to split one total into equal payments.</p>
+      </div>
+
+      <div class="twocol" style="margin-top:22px">
+        <div class="ccard sub">
+          <span class="ccard__tag">STEP 6 · SUBSCRIPTION</span>
+          <h3 style="font-size:17px">Duration: Unlimited</h3>
+          <div class="ui" style="max-width:none;margin-top:10px">
+            <div class="ui__body" style="padding:13px">
+              <div class="radio on"><span class="rb"></span>Unlimited <small>never ends</small></div>
+              <div class="radio"><span class="rb"></span>Ends after a number of bills</div>
+            </div>
+          </div>
+        </div>
+        <div class="ccard inst">
+          <span class="ccard__tag">STEP 6 · INSTALLMENT</span>
+          <h3 style="font-size:17px">Duration: Ends after N bills</h3>
+          <div class="ui" style="max-width:none;margin-top:10px">
+            <div class="ui__body" style="padding:13px">
+              <div class="radio"><span class="rb"></span>Unlimited</div>
+              <div class="radio on brand"><span class="rb"></span>Ends after a number of bills</div>
+              <div class="fld" style="margin-top:8px"><div class="fld__l">Number of bills <span class="req">*</span></div>
+                <div class="fld__in">12 <span class="unit">payments</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip" style="margin-left:0">
+        <span class="callout__i">✓</span>
+        <p><b>FitHaus Annual Pass example:</b> a RM 1,500 yearly pass sold as 12 equal payments. Set price to <span class="mono">RM 125</span>, interval <b>Monthly</b>, duration <b>Ends after 12 bills</b>. The customer pays RM 125 a month for a year, then billing stops on its own — total <span class="mono">RM 1,500</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============ SIDE BY SIDE ============ -->
+    <section class="section" id="compare">
+      <div class="sec-head">
+        <span class="sec-kicker dark">=</span>
+        <div class="sec-head__txt">
+          <h2>Side by side</h2>
+          <p>Same setup, same cycle. The difference is whether billing has a finish line.</p>
+        </div>
+      </div>
+      <div class="vs">
+        <div class="vs__row vs__head">
+          <div class="vh">&nbsp;</div>
+          <div class="vsub">A · Recurring Subscription</div>
+          <div class="vinst">B · Recurring Installment</div>
+        </div>
+        <div class="vs__row"><div class="vh">Step 6 duration</div><div class="a"><b>Unlimited</b> (never ends)</div><div class="b"><b>Ends after a number of bills</b></div></div>
+        <div class="vs__row"><div class="vh">When billing stops</div><div class="a">Only when you cancel it</div><div class="b">Automatically, after the set count</div></div>
+        <div class="vs__row"><div class="vh">What's charged each cycle</div><div class="a">A recurring fee for ongoing access</div><div class="b">One slice of a larger total</div></div>
+        <div class="vs__row"><div class="vh">Total amount</div><div class="a">Open-ended — grows every cycle</div><div class="b">Fixed and known up front</div></div>
+        <div class="vs__row"><div class="vh">Best for</div><div class="a">Memberships, SaaS, ongoing services</div><div class="b">Paying off a price in equal parts</div></div>
+        <div class="vs__row"><div class="vh">Malaysia example</div><div class="a"><b>RM 150</b>/month gym membership</div><div class="b"><b>RM 125</b> × 12 = RM 1,500 annual pass</div></div>
+        <div class="vs__row"><div class="vh">Everything else</div><div class="a" style="grid-column:span 2;text-align:center;color:var(--muted)">Identical — same Collection, plan, pricing model, billing cycle, Pricing Table &amp; share URL</div></div>
+      </div>
+    </section>
+
+    <!-- ============ CUSTOMER EXPERIENCE ============ -->
+    <section class="section" id="customer">
+      <div class="sec-head">
+        <span class="sec-kicker alt">→</span>
+        <div class="sec-head__txt">
+          <h2>What your customer sees</h2>
+          <p>After you share the URL, this is the journey on their side — no app, no account setup with you, just the link.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="fstep"><div class="fstep__n">1</div><h4>Open &amp; choose</h4><p>They open your Pricing Table link, pick a plan, and adjust quantity — the total updates instantly. They can apply a coupon if you added one.</p></div>
+        <div class="fstep"><div class="fstep__n">2</div><h4>Verify email</h4><p>They enter their email and confirm with a one-time password (OTP) sent to their inbox, then fill in personal &amp; billing details.</p></div>
+        <div class="fstep"><div class="fstep__n">3</div><h4>Turn on auto-debit</h4><p>They toggle <b>Enroll in Auto-Debit</b> and add a card (or a supported direct-debit mandate) so future cycles collect automatically.</p></div>
+        <div class="fstep"><div class="fstep__n">4</div><h4>Pay &amp; confirm</h4><p>They pay via their chosen channel and get a success screen plus a receipt by email. Every later bill repeats this automatically.</p></div>
+      </div>
+      <div class="callout note">
+        <span class="callout__i">i</span>
+        <p><b>Payment channels in Malaysia.</b> Available options can include FPX online banking, cards, e-wallets (Touch ’n Go eWallet, GrabPay, Boost), DuitNow QR, and Virtual Account. For <b>auto-debit</b>, the customer needs a <b>card</b> or a supported <b>direct-debit mandate</b> — a one-time <b>Virtual Account</b> transfer can't be auto-deducted on its own, so it suits manual or single payments rather than hands-off recurring collection.</p>
+      </div>
+      <div class="callout tip">
+        <span class="callout__i">✓</span>
+        <p>You watch it all from <span class="kbd">Subscription &amp; Billing</span>: bill status flips to paid as money lands, each cycle mints a new invoice number, and the dashboard shows what you've collected versus what's still outstanding.</p>
+      </div>
+    </section>
+
+    <!-- ============ CHECKLIST ============ -->
+    <section class="section" id="checklist">
+      <div class="check">
+        <h3>Launch checklist</h3>
+        <p>Run through this before you share the link. Nine ticks and you're live.</p>
+        <div class="check__list">
+          <div class="ci"><span class="bx">✓</span><p>FlexiBill <b>activated</b> on a verified Business account</p></div>
+          <div class="ci"><span class="bx">✓</span><p><b>Collection</b> created with Invoice Term + Grace Period</p></div>
+          <div class="ci"><span class="bx">✓</span><p>Plan has a clear <b>name, description &amp; image</b></p></div>
+          <div class="ci"><span class="bx">✓</span><p><b>Pricing model</b> chosen (Flat for most plans)</p></div>
+          <div class="ci"><span class="bx">✓</span><p><b>Price</b> set in <span class="mono">MYR (RM)</span></p></div>
+          <div class="ci"><span class="bx">✓</span><p>Cycle = <b>Recurring</b>, interval set (e.g. Monthly)</p></div>
+          <div class="ci"><span class="bx">✓</span><p>Start <b>date of billing</b> is today or later</p></div>
+          <div class="ci"><span class="bx">✓</span><p>Duration: <b>Unlimited</b> (A) <i>or</i> <b>Ends after N bills</b> (B)</p></div>
+          <div class="ci"><span class="bx">✓</span><p><b>Pricing Table</b> built &amp; <b>URL copied</b> from Integration</p></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="site-foot">
+  <span>Merchant guide for <b>FlexiBill by DOKU</b> · Malaysia. Screens are illustrative mockups of the Subscription &amp; Billing flow.</span>
+  <span>Path: <b>Subscription &amp; Billing → Collection → Plan → Pricing Table</b></span>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- mobile nav ---------- */
+  var menuBtn=document.getElementById('menuBtn'), sidenav=document.getElementById('sidenav'), mask=document.getElementById('navmask');
+  function closeNav(){ sidenav.classList.remove('open'); mask.classList.remove('show'); }
+  if(menuBtn){ menuBtn.addEventListener('click',function(){ sidenav.classList.toggle('open'); mask.classList.toggle('show'); }); }
+  if(mask){ mask.addEventListener('click',closeNav); }
+  sidenav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click',closeNav); });
+
+  /* ---------- scroll spy ---------- */
+  var links = Array.prototype.slice.call(sidenav.querySelectorAll('a'));
+  var map={}; links.forEach(function(l){ var id=l.getAttribute('href').slice(1); var el=document.getElementById(id); if(el) map[id]=l; });
+  var ids=Object.keys(map);
+  function spy(){
+    var pos=window.scrollY+120, current=ids[0];
+    ids.forEach(function(id){ var el=document.getElementById(id); if(el && el.offsetTop<=pos) current=id; });
+    links.forEach(function(l){ l.classList.remove('active'); });
+    if(map[current]) map[current].classList.add('active');
+  }
+  window.addEventListener('scroll',spy,{passive:true}); window.addEventListener('resize',spy); spy();
+
+  /* ---------- hero cycle timeline ---------- */
+  var svg=document.getElementById('cycleSvg'), g=document.getElementById('tickets'), endG=document.getElementById('cycleEnd'), cap=document.getElementById('cycleCap');
+  var tSub=document.getElementById('tSub'), tInst=document.getElementById('tInst');
+  var SVGNS='http://www.w3.org/2000/svg';
+  function el(n,a){ var e=document.createElementNS(SVGNS,n); for(var k in a){ e.setAttribute(k,a[k]); } return e; }
+  function ticket(x, idx, faded, animate){
+    var gg=el('g',{}); var w=46,h=34,y=57;
+    var r=el('rect',{x:x,y:y,width:w,height:h,rx:6,fill: faded?'rgba(255,255,255,.06)':'#fff', stroke: faded?'rgba(255,255,255,.18)':'rgba(255,255,255,.5)','stroke-width':1});
+    gg.appendChild(r);
+    var bar=el('rect',{x:x+7,y:y+7,width:w-14,height:4,rx:2,fill: faded?'rgba(255,255,255,.18)':'#ff7a72'}); gg.appendChild(bar);
+    var bar2=el('rect',{x:x+7,y:y+15,width:w-20,height:3,rx:1.5,fill:'rgba(255,255,255,.28)'}); gg.appendChild(bar2);
+    var bar3=el('rect',{x:x+7,y:y+22,width:w-26,height:3,rx:1.5,fill:'rgba(255,255,255,.28)'}); gg.appendChild(bar3);
+    var dot=el('circle',{cx:x+w/2,cy:50,r:4,fill: faded?'rgba(255,255,255,.25)':'#ff7a72'}); gg.appendChild(dot);
+    var lbl=el('text',{x:x+w/2,y:108,'text-anchor':'middle','font-family':'JetBrains Mono, monospace','font-size':'10',fill: faded?'rgba(255,255,255,.4)':'rgba(255,255,255,.78)'});
+    lbl.textContent='#'+idx; gg.appendChild(lbl);
+    if(animate && !reduce){ gg.style.opacity='0'; gg.style.transform='translateY(8px)'; gg.style.transition='opacity .4s ease '+(idx*0.08)+'s, transform .4s ease '+(idx*0.08)+'s';
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ gg.style.opacity='1'; gg.style.transform='translateY(0)'; }); }); }
+    return gg;
+  }
+  function render(mode, animate){
+    while(g.firstChild) g.removeChild(g.firstChild);
+    while(endG.firstChild) endG.removeChild(endG.firstChild);
+    var startX=34, gap=66;
+    if(mode==='sub'){
+      for(var i=1;i<=8;i++){ var faded=(i>=7); g.appendChild(ticket(startX+(i-1)*gap, i, faded, animate)); }
+      // infinity at the end
+      var inf=el('text',{x:728,y:80,'text-anchor':'middle','font-family':'Space Grotesk, sans-serif','font-size':'34','font-weight':'700',fill:'#ff7a72'}); inf.textContent='∞';
+      endG.appendChild(inf);
+      cap.innerHTML='A subscription keeps generating a new bill every cycle — <b>no end date</b> — until you cancel it.';
+    } else {
+      for(var j=1;j<=8;j++){ g.appendChild(ticket(startX+(j-1)*gap, j, false, animate)); }
+      // stop flag after #8
+      var line=el('line',{x1:566,y1:40,x2:566,y2:96,stroke:'#ff7a72','stroke-width':2,'stroke-dasharray':'4 3'}); endG.appendChild(line);
+      var flag=el('rect',{x:566,y:40,width:30,height:16,rx:3,fill:'#ff7a72'}); endG.appendChild(flag);
+      var ft=el('text',{x:581,y:52,'text-anchor':'middle','font-family':'Inter, sans-serif','font-size':'10','font-weight':'700',fill:'#1b1b22'}); ft.textContent='STOP'; endG.appendChild(ft);
+      cap.innerHTML='An installment bills the same way, but <b>stops automatically after the number you set</b> (here, 8). No cancelling needed.';
+    }
+  }
+  function setMode(mode){
+    var sub = mode==='sub';
+    tSub.setAttribute('aria-pressed', sub?'true':'false');
+    tInst.setAttribute('aria-pressed', sub?'false':'true');
+    render(mode, true);
+  }
+  if(tSub){ tSub.addEventListener('click',function(){ setMode('sub'); }); }
+  if(tInst){ tInst.addEventListener('click',function(){ setMode('inst'); }); }
+  render('sub', true);
+
+  /* ---------- pricing model explorer ---------- */
+  var models={
+    flat:{ t:'Flat pricing', d:'One fixed price per billing cycle, no matter the quantity. The simplest model — and the right choice for most memberships and subscriptions.',
+      calc:'Membership = <span class="r">RM 150.00</span> / month<br>Quantity doesn’t change the price.',
+      viz:flatViz },
+    unit:{ t:'Unit (per-unit) pricing', d:'A single price multiplied by the quantity. Every unit costs the same; the bill scales straight up with how many they buy.',
+      calc:'RM 20.00 × <span class="r">10 seats</span><br>= <span class="r">RM 200.00</span> / month',
+      viz:unitViz },
+    volume:{ t:'Volume pricing', d:'The quantity lands in a bracket, and that bracket’s rate applies to ALL units. Buy more, the whole order gets the cheaper rate.',
+      calc:'10 seats → 6–20 bracket = RM 25 each<br>RM 25 × 10 = <span class="r">RM 250.00</span> / month',
+      viz:volumeViz },
+    tiered:{ t:'Tiered pricing', d:'Each bracket is charged at its own rate and added up (cumulative). Early units cost more; later units cost less.',
+      calc:'First 5 × RM 30 = RM 150<br>Next 5 × RM 25 = RM 125<br>Total = <span class="r">RM 275.00</span> / month',
+      viz:tieredViz },
+    stairstep:{ t:'Stairstep pricing', d:'A flat price for a whole bracket. The total jumps in steps as quantity crosses each threshold — not per unit.',
+      calc:'1–10 seats = <span class="r">RM 250.00</span> (flat)<br>11–50 seats = <span class="r">RM 900.00</span> (flat)',
+      viz:stairstepViz }
+  };
+  function bars(data, colorize){
+    // data: array of {h, label, hl}
+    var max=0; data.forEach(function(d){ if(d.h>max) max=d.h; });
+    var W=280,H=150, n=data.length, bw=Math.min(40,(W-40)/n-12), gap=((W-40)-bw*n)/(n-1||1), x0=20, base=120;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    s+='<line x1="14" y1="'+base+'" x2="'+(W-6)+'" y2="'+base+'" stroke="#D8D8E0" stroke-width="1.5"/>';
+    data.forEach(function(d,i){
+      var h=Math.max(6, d.h/max*90), x=x0+i*(bw+gap), y=base-h;
+      s+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="4" fill="'+(d.hl?'#E1251B':'#C9C9D6')+'"/>';
+      s+='<text x="'+(x+bw/2)+'" y="'+base+'" dy="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#73737F">'+d.label+'</text>';
+    });
+    s+='</svg>'; return s;
+  }
+  function flatViz(){ return bars([{h:60,label:'1',hl:true},{h:60,label:'5',hl:true},{h:60,label:'10',hl:true}]); }
+  function unitViz(){ return bars([{h:20,label:'1',hl:true},{h:60,label:'5',hl:true},{h:100,label:'10',hl:true}]); }
+  function volumeViz(){ return bars([{h:30,label:'1–5',hl:false},{h:75,label:'6–20',hl:true},{h:90,label:'21+',hl:false}]); }
+  function tieredViz(){
+    // stacked single column showing two tiers
+    var s='<svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">';
+    s+='<line x1="14" y1="120" x2="274" y2="120" stroke="#D8D8E0" stroke-width="1.5"/>';
+    s+='<rect x="110" y="78" width="56" height="42" rx="4" fill="#C9C9D6"/>';
+    s+='<rect x="110" y="42" width="56" height="36" rx="4" fill="#E1251B"/>';
+    s+='<text x="138" y="100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#41414C">×30</text>';
+    s+='<text x="138" y="64" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#fff">×25</text>';
+    s+='<text x="138" y="120" dy="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#73737F">10 seats</text>';
+    s+='</svg>'; return s;
+  }
+  function stairstepViz(){
+    var s='<svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">';
+    s+='<line x1="14" y1="120" x2="274" y2="120" stroke="#D8D8E0" stroke-width="1.5"/>';
+    s+='<path d="M20 110 H110 V70 H200 V36 H262" fill="none" stroke="#E1251B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+    s+='<circle cx="110" cy="70" r="4" fill="#E1251B"/><circle cx="200" cy="36" r="4" fill="#E1251B"/>';
+    s+='<text x="60" y="110" dy="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#73737F">1–10</text>';
+    s+='<text x="150" y="70" dy="14" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#73737F">11–50</text>';
+    s+='</svg>'; return s;
+  }
+  var pxTabs=document.querySelectorAll('.px__tab'), pxTitle=document.getElementById('pxTitle'), pxDef=document.getElementById('pxDef'), pxCalc=document.getElementById('pxCalc'), pxViz=document.getElementById('pxViz');
+  function showModel(key){
+    var m=models[key]; if(!m) return;
+    pxTitle.textContent=m.t; pxDef.textContent=m.d; pxCalc.innerHTML=m.calc; pxViz.innerHTML=m.viz();
+    pxTabs.forEach(function(t){ t.setAttribute('aria-selected', t.getAttribute('data-m')===key?'true':'false'); });
+  }
+  pxTabs.forEach(function(t){ t.addEventListener('click',function(){ showModel(t.getAttribute('data-m')); }); });
+  showModel('flat');
+
+  /* ---------- copy URL demo ---------- */
+  var copyBtn=document.getElementById('copyUrl'), copyTxt=document.getElementById('copyTxt');
+  if(copyBtn){
+    copyBtn.addEventListener('click',function(){
+      var url=copyTxt.textContent.trim(), label=copyBtn.querySelector('span');
+      function done(){ var old=label.textContent; label.textContent='✓ Copied'; setTimeout(function(){ label.textContent=old; },1400); }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done).catch(done); }
+      else { try{ var ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(e){} done(); }
+    });
+  }
+})();
+</script>
+</body>
+</html>
