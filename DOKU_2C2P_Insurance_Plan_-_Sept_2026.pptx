@@ -1,0 +1,88 @@
+## Slide 1
+
+WHAT IT DOES FOR AN INSURER: Four Moments in the Insurance Lifecycle, Optimized.  
+WHY AN INSURER PICKS US: 
+FlexiBill Mandate: Replace static batch charging with subscription-native billing logic — subscription lifecycle + auto debit + dunning + paychat = complete insurance billing
+One Framework for  7 Insurance Product Types: Regular Premium, Single Premium, Riders, Regular Top Up, Single Top Up
+ THE ROAD TO PREFERRED -> Preferred is not a feature count. It is being the only layer that sees a policy about to lapse — and acts before it does
+
+New business
+
+Registration
+
+One policyholder record, custom enrollment forms, KYC capture, bulk upload for group schemes, white-label portal.
+
+Premium
+
+Collection
+
+AutoDebet host-to-host plus card, QRIS, VA and e-wallet. Six pricing models cover every premium shape.
+
+Renewal
+
+Presentment
+
+A payment link inside WhatsApp, self-service Billing Portal, agent dashboard, one operations view.
+
+      
+
+Persistency
+
+Recovery
+
+Smart retry, card updater, dunning, decline segmentation, recovery dashboards, webhooks to the policy system.
+
+Coverage: 4 channels — bancassurance, agency, self-enrollment, general  ·  7 product types across link and non-link  ·  6 ways a bill is created  ·  6 lifecycle states, from registered to win-back
+
+A plan live in hours
+
+not an engineering ticket
+
+No-code and full API
+
+not one or the other
+
+Retry plus a one-tap fix
+
+not a monthly failure report
+
+Discounts the merchant owns
+
+Modular Or Integrated
+
+Not a vendor services
+
+STAGE 1 · DEC 2026
+
+Complete
+
+Nine P0 items close collection and recovery: smart retry and reminder, PayChat payment, bulk upload, calendar prorate.
+
+STAGE 2 · H1 2027
+
+Carrier-grade
+
+Merchant-hosted PCI capture, installments, Agent Online Services, post paid, usage billing, Malaysia localisation.
+
+Billing Recurring - On Demand Token Billing (Merchant Hosted)
+Fits: mature policy admin systems, unit-linked (PAYDI), SFTP-batch carriers
+
+B. 	Billing Automation - Managed Billing Engine (DOKU Hosted)
+Fits: non-link products, single-event collection,carriers without a billing engine
+
+ot a bank promo engine decision 
+
+Critical - Preferred
+
+Migration card to token, The instrument never dies: fallback funding, card-network tokens, usage meter  billing, e-materai, B2B Billing 
+
+Doku Insurance industry plan and outlook 
+
+82.8%
+Unique ID Success Rate
+
+528,341 TPT
+Average June - Aug 26
+
+Rp473.8B TPV
+Average June - Aug 26
